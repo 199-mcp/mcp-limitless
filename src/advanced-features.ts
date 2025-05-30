@@ -134,6 +134,7 @@ export class NaturalTimeParser {
         const now = new Date(this.referenceTime);
         const currentDate = new Date(now.toLocaleString("en-US", { timeZone: this.timezone }));
         
+        // Basic day references
         switch (normalized) {
             case "today":
                 return this.getDayRange(currentDate);
@@ -143,15 +144,75 @@ export class NaturalTimeParser {
                 yesterday.setDate(yesterday.getDate() - 1);
                 return this.getDayRange(yesterday);
             
+            case "tomorrow":
+                const tomorrow = new Date(currentDate);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                return this.getDayRange(tomorrow);
+            
+            // Time of day - today
             case "this morning":
+            case "morning":
                 return this.getTimeOfDayRange(currentDate, 6, 12);
             
             case "this afternoon":
+            case "afternoon":
                 return this.getTimeOfDayRange(currentDate, 12, 18);
             
             case "this evening":
+            case "evening":
                 return this.getTimeOfDayRange(currentDate, 18, 22);
             
+            case "tonight":
+            case "this night":
+                return this.getTimeOfDayRange(currentDate, 20, 23, 59);
+            
+            case "earlier today":
+            case "earlier":
+                const earlierEnd = new Date(currentDate);
+                return this.getTimeOfDayRange(currentDate, 0, earlierEnd.getHours());
+            
+            case "later today":
+                const laterStart = new Date(currentDate);
+                return this.getTimeOfDayRange(currentDate, laterStart.getHours(), 23, 59);
+            
+            // Yesterday time periods
+            case "yesterday morning":
+                const yesterdayMorning = new Date(currentDate);
+                yesterdayMorning.setDate(yesterdayMorning.getDate() - 1);
+                return this.getTimeOfDayRange(yesterdayMorning, 6, 12);
+            
+            case "yesterday afternoon":
+                const yesterdayAfternoon = new Date(currentDate);
+                yesterdayAfternoon.setDate(yesterdayAfternoon.getDate() - 1);
+                return this.getTimeOfDayRange(yesterdayAfternoon, 12, 18);
+            
+            case "yesterday evening":
+                const yesterdayEvening = new Date(currentDate);
+                yesterdayEvening.setDate(yesterdayEvening.getDate() - 1);
+                return this.getTimeOfDayRange(yesterdayEvening, 18, 22);
+            
+            case "last night":
+                const lastNight = new Date(currentDate);
+                lastNight.setDate(lastNight.getDate() - 1);
+                return this.getTimeOfDayRange(lastNight, 20, 23, 59);
+            
+            // Tomorrow time periods
+            case "tomorrow morning":
+                const tomorrowMorning = new Date(currentDate);
+                tomorrowMorning.setDate(tomorrowMorning.getDate() + 1);
+                return this.getTimeOfDayRange(tomorrowMorning, 6, 12);
+            
+            case "tomorrow afternoon":
+                const tomorrowAfternoon = new Date(currentDate);
+                tomorrowAfternoon.setDate(tomorrowAfternoon.getDate() + 1);
+                return this.getTimeOfDayRange(tomorrowAfternoon, 12, 18);
+            
+            case "tomorrow evening":
+                const tomorrowEvening = new Date(currentDate);
+                tomorrowEvening.setDate(tomorrowEvening.getDate() + 1);
+                return this.getTimeOfDayRange(tomorrowEvening, 18, 22);
+            
+            // Week references
             case "this week":
                 return this.getWeekRange(currentDate);
             
@@ -160,6 +221,106 @@ export class NaturalTimeParser {
                 lastWeek.setDate(lastWeek.getDate() - 7);
                 return this.getWeekRange(lastWeek);
             
+            case "next week":
+                const nextWeek = new Date(currentDate);
+                nextWeek.setDate(nextWeek.getDate() + 7);
+                return this.getWeekRange(nextWeek);
+            
+            // Weekend references
+            case "this weekend":
+                return this.getWeekendRange(currentDate);
+            
+            case "last weekend":
+                const lastWeekendDate = new Date(currentDate);
+                lastWeekendDate.setDate(lastWeekendDate.getDate() - 7);
+                return this.getWeekendRange(lastWeekendDate);
+            
+            case "next weekend":
+                const nextWeekendDate = new Date(currentDate);
+                nextWeekendDate.setDate(nextWeekendDate.getDate() + 7);
+                return this.getWeekendRange(nextWeekendDate);
+            
+            // Month references
+            case "this month":
+                return this.getMonthRange(currentDate);
+            
+            case "last month":
+                const lastMonth = new Date(currentDate);
+                lastMonth.setMonth(lastMonth.getMonth() - 1);
+                return this.getMonthRange(lastMonth);
+            
+            case "next month":
+                const nextMonth = new Date(currentDate);
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                return this.getMonthRange(nextMonth);
+            
+            // Year references
+            case "this year":
+                return this.getYearRange(currentDate);
+            
+            case "last year":
+                const lastYear = new Date(currentDate);
+                lastYear.setFullYear(lastYear.getFullYear() - 1);
+                return this.getYearRange(lastYear);
+            
+            // Quarter references
+            case "this quarter":
+            case "q" + (Math.floor(currentDate.getMonth() / 3) + 1):
+                return this.getQuarterRange(currentDate);
+            
+            case "last quarter":
+                const lastQuarter = new Date(currentDate);
+                lastQuarter.setMonth(lastQuarter.getMonth() - 3);
+                return this.getQuarterRange(lastQuarter);
+            
+            case "q1":
+                return this.getSpecificQuarterRange(currentDate.getFullYear(), 1);
+            
+            case "q2":
+                return this.getSpecificQuarterRange(currentDate.getFullYear(), 2);
+            
+            case "q3":
+                return this.getSpecificQuarterRange(currentDate.getFullYear(), 3);
+            
+            case "q4":
+                return this.getSpecificQuarterRange(currentDate.getFullYear(), 4);
+            
+            // Informal references
+            case "recently":
+                return this.getRelativeDayRange(currentDate, -14, 0);
+            
+            case "the other day":
+                return this.getRelativeDayRange(currentDate, -4, -2);
+            
+            case "a few days ago":
+                return this.getRelativeDayRange(currentDate, -4, -2);
+            
+            case "a couple days ago":
+            case "couple days ago":
+                return this.getRelativeDayRange(currentDate, -2, -2);
+            
+            // Boundary references
+            case "beginning of the week":
+            case "start of the week":
+                const weekStart = new Date(currentDate);
+                weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+                return this.getDayRange(weekStart);
+            
+            case "end of the week":
+                const weekEnd = new Date(currentDate);
+                weekEnd.setDate(weekEnd.getDate() + (6 - weekEnd.getDay()));
+                return this.getDayRange(weekEnd);
+            
+            case "beginning of the month":
+            case "start of the month":
+                const monthStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+                return this.getDayRange(monthStart);
+            
+            case "end of the month":
+                const monthEnd = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+                return this.getDayRange(monthEnd);
+            
+            // Special fixed ranges (backward compatibility)
             case "past 3 days":
                 return this.getRelativeDayRange(currentDate, -3, 0);
             
@@ -170,6 +331,10 @@ export class NaturalTimeParser {
                 return this.getRelativeDayRange(currentDate, -30, 0);
             
             default:
+                // Try to parse flexible relative expressions like "past N days"
+                const flexibleMatch = this.parseFlexibleRelativeExpression(normalized, currentDate);
+                if (flexibleMatch) return flexibleMatch;
+                
                 // Try to parse specific day names like "last monday", "tuesday"
                 const dayMatch = this.parseDayReference(normalized, currentDate);
                 if (dayMatch) return dayMatch;
@@ -178,7 +343,11 @@ export class NaturalTimeParser {
                 const relativeMatch = this.parseRelativeExpression(normalized, currentDate);
                 if (relativeMatch) return relativeMatch;
                 
-                throw new Error(`Unsupported time expression: "${expression}". Supported: today, yesterday, this morning/afternoon/evening, this week, last week, past N days/week/month, day names, or relative expressions.`);
+                // Try to parse future expressions like "in 2 days"
+                const futureMatch = this.parseFutureExpression(normalized, currentDate);
+                if (futureMatch) return futureMatch;
+                
+                throw new Error(`Unsupported time expression: "${expression}". Supported: today, yesterday, tomorrow, this/last/next week/month/year, weekends, mornings/afternoons/evenings, quarters, relative expressions (N days ago, past N days), and more. See documentation for full list.`);
         }
     }
 
@@ -196,12 +365,12 @@ export class NaturalTimeParser {
         };
     }
 
-    private getTimeOfDayRange(date: Date, startHour: number, endHour: number): TimeRange {
+    private getTimeOfDayRange(date: Date, startHour: number, endHour: number, endMinute: number = 0): TimeRange {
         const start = new Date(date);
         start.setHours(startHour, 0, 0, 0);
         
         const end = new Date(date);
-        end.setHours(endHour, 0, 0, 0);
+        end.setHours(endHour, endMinute, 59, 999);
         
         return {
             start: this.formatDateTime(start),
@@ -275,9 +444,156 @@ export class NaturalTimeParser {
         return this.getDayRange(targetDate);
     }
 
+    private getWeekendRange(date: Date): TimeRange {
+        // Find the Saturday of the week containing date
+        const saturday = new Date(date);
+        const dayOfWeek = saturday.getDay();
+        const daysToSaturday = (6 - dayOfWeek + 7) % 7;
+        saturday.setDate(saturday.getDate() + daysToSaturday);
+        
+        // Weekend is Saturday and Sunday
+        const start = new Date(saturday);
+        start.setHours(0, 0, 0, 0);
+        
+        const end = new Date(saturday);
+        end.setDate(end.getDate() + 1); // Sunday
+        end.setHours(23, 59, 59, 999);
+        
+        return {
+            start: this.formatDateTime(start),
+            end: this.formatDateTime(end),
+            timezone: this.timezone
+        };
+    }
+
+    private getMonthRange(date: Date): TimeRange {
+        const start = new Date(date.getFullYear(), date.getMonth(), 1);
+        start.setHours(0, 0, 0, 0);
+        
+        const end = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+        end.setHours(23, 59, 59, 999);
+        
+        return {
+            start: this.formatDateTime(start),
+            end: this.formatDateTime(end),
+            timezone: this.timezone
+        };
+    }
+
+    private getYearRange(date: Date): TimeRange {
+        const start = new Date(date.getFullYear(), 0, 1);
+        start.setHours(0, 0, 0, 0);
+        
+        const end = new Date(date.getFullYear(), 11, 31);
+        end.setHours(23, 59, 59, 999);
+        
+        return {
+            start: this.formatDateTime(start),
+            end: this.formatDateTime(end),
+            timezone: this.timezone
+        };
+    }
+
+    private getQuarterRange(date: Date): TimeRange {
+        const quarter = Math.floor(date.getMonth() / 3);
+        const start = new Date(date.getFullYear(), quarter * 3, 1);
+        start.setHours(0, 0, 0, 0);
+        
+        const end = new Date(date.getFullYear(), (quarter + 1) * 3, 0);
+        end.setHours(23, 59, 59, 999);
+        
+        return {
+            start: this.formatDateTime(start),
+            end: this.formatDateTime(end),
+            timezone: this.timezone
+        };
+    }
+
+    private getSpecificQuarterRange(year: number, quarter: number): TimeRange {
+        const start = new Date(year, (quarter - 1) * 3, 1);
+        start.setHours(0, 0, 0, 0);
+        
+        const end = new Date(year, quarter * 3, 0);
+        end.setHours(23, 59, 59, 999);
+        
+        return {
+            start: this.formatDateTime(start),
+            end: this.formatDateTime(end),
+            timezone: this.timezone
+        };
+    }
+
+    private parseFlexibleRelativeExpression(expression: string, currentDate: Date): TimeRange | null {
+        // Match patterns like "past 5 days", "last 2 weeks", "past 3 months"
+        const patterns = [
+            /^(?:past|last)\s+(\d+)\s+(day|days|week|weeks|month|months)$/,
+            /^(?:previous|prior)\s+(\d+)\s+(day|days|week|weeks|month|months)$/
+        ];
+        
+        for (const pattern of patterns) {
+            const match = expression.match(pattern);
+            if (match) {
+                const amount = parseInt(match[1]);
+                const unit = match[2];
+                
+                if (unit.startsWith("day")) {
+                    return this.getRelativeDayRange(currentDate, -amount, 0);
+                } else if (unit.startsWith("week")) {
+                    return this.getRelativeDayRange(currentDate, -(amount * 7), 0);
+                } else if (unit.startsWith("month")) {
+                    const start = new Date(currentDate);
+                    start.setMonth(start.getMonth() - amount);
+                    return {
+                        start: this.formatDateTime(start),
+                        end: this.formatDateTime(currentDate),
+                        timezone: this.timezone
+                    };
+                }
+            }
+        }
+        
+        return null;
+    }
+
+    private parseFutureExpression(expression: string, currentDate: Date): TimeRange | null {
+        // Match patterns like "in 2 days", "in a week", "in 3 hours"
+        const pattern = /^in\s+(?:a|an|\d+)\s+(day|days|week|weeks|month|months|hour|hours)$/;
+        const match = expression.match(pattern);
+        
+        if (!match) return null;
+        
+        const amountMatch = expression.match(/\d+/);
+        const amount = amountMatch ? parseInt(amountMatch[0]) : 1;
+        const unit = match[1];
+        
+        const targetDate = new Date(currentDate);
+        
+        if (unit.startsWith("day")) {
+            targetDate.setDate(targetDate.getDate() + amount);
+            return this.getDayRange(targetDate);
+        } else if (unit.startsWith("week")) {
+            targetDate.setDate(targetDate.getDate() + (amount * 7));
+            return this.getDayRange(targetDate);
+        } else if (unit.startsWith("month")) {
+            targetDate.setMonth(targetDate.getMonth() + amount);
+            return this.getDayRange(targetDate);
+        } else if (unit.startsWith("hour")) {
+            const end = new Date(currentDate);
+            end.setHours(end.getHours() + amount);
+            
+            return {
+                start: this.formatDateTime(currentDate),
+                end: this.formatDateTime(end),
+                timezone: this.timezone
+            };
+        }
+        
+        return null;
+    }
+
     private parseRelativeExpression(expression: string, currentDate: Date): TimeRange | null {
         // Match patterns like "2 days ago", "3 hours ago", "1 week ago"
-        const relativePattern = /^(\d+)\s+(day|days|hour|hours|week|weeks)\s+ago$/;
+        const relativePattern = /^(\d+)\s+(day|days|hour|hours|week|weeks|month|months)\s+ago$/;
         const match = expression.match(relativePattern);
         
         if (!match) return null;
@@ -292,6 +608,9 @@ export class NaturalTimeParser {
             return this.getDayRange(targetDate);
         } else if (unit.startsWith("week")) {
             targetDate.setDate(targetDate.getDate() - (amount * 7));
+            return this.getDayRange(targetDate);
+        } else if (unit.startsWith("month")) {
+            targetDate.setMonth(targetDate.getMonth() - amount);
             return this.getDayRange(targetDate);
         } else if (unit.startsWith("hour")) {
             const start = new Date(currentDate);

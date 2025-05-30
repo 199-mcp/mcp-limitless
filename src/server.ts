@@ -142,7 +142,7 @@ const DetailedAnalysisArgsSchema = {
 
 const server = new McpServer({
     name: "LimitlessMCP",
-    version: "0.3.0",
+    version: "0.3.1",
 }, {
     capabilities: {
         tools: {}

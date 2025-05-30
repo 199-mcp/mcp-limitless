@@ -1,6 +1,6 @@
 {
   "name": "199bio-mcp-limitless-server",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Advanced MCP Server with AI-powered Limitless API features: natural time queries, meeting detection, action item extraction, daily summaries, and speaker analytics",
   "license": "MIT",
   "author": "Boris Djordjevic <boris@199longevity.com> (199 Longevity), Ryan Boyle (Original)",

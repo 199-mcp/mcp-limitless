@@ -1,5 +1,5 @@
-# Advanced Limitless MCP Server (v0.3.0) 🚀
-![Version](https://img.shields.io/badge/version-0.3.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
+# Advanced Limitless MCP Server (v0.3.1) 🚀
+![Version](https://img.shields.io/badge/version-0.3.1-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
 
 An **intelligent MCP (Model Context Protocol) server** that transforms your Limitless Pendant data into actionable insights for AI tools like Claude, Windsurf, and others. This enhanced version provides advanced features like natural language time queries, automatic meeting detection, smart action item extraction, and comprehensive daily summaries.
 
@@ -15,7 +15,13 @@ An **intelligent MCP (Model Context Protocol) server** that transforms your Limi
 | **Speaker Analysis** | Basic speaker names only | Full conversation analytics with patterns | 👥 **Deep relationship insights** |
 | **User Experience** | 3-5 tool calls for simple tasks | 1 tool call with intelligent results | ⚡ **5x faster workflows** |
 
-**✨ What's New in v0.3.0:**
+**✨ What's New in v0.3.1:**
+- 📅 **50+ Natural Time Expressions** - "last month", "tomorrow", "this weekend", etc.
+- 🎯 **Flexible Relative Dates** - "past 5 days", "in 2 weeks", "3 days ago"
+- 💼 **Business Time Support** - Quarters (Q1-Q4), year references, month boundaries
+- 🌅 **Enhanced Time Periods** - "yesterday afternoon", "tomorrow morning", "last night"
+
+**Previous v0.3.0 Features:**
 - 📄 **Raw Transcript Extraction** - Clean, AI-optimized transcript formats
 - 🔬 **Detailed Technical Analysis** - Precision extraction of scientific/medical terms
 - 🎯 **Multi-Format Support** - Raw text, verbatim, structured, timestamps
@@ -50,11 +56,11 @@ You can run this intelligent MCP server directly using npx without any installat
 }
 ```
 
-This automatically downloads v0.3.0 with all advanced features when your MCP client starts.
+This automatically downloads v0.3.1 with all advanced features when your MCP client starts.
 
 ## 🎯 Perfect for Claude AI Users
 
-The v0.3.0 upgrade transforms your Claude conversations with Limitless data:
+The v0.3.1 upgrade transforms your Claude conversations with Limitless data:
 
 **Before:** "Let me check your logs... *reads through everything* ... based on my analysis..."  
 **After:** "What action items came from today's meetings?" → *Instant intelligent response*
@@ -194,13 +200,21 @@ If your `mcpServers` object already contains other servers (like `"notion": {...
 2.  Configure your MCP client as shown above.
 3.  Start your MCP client application. It will launch the `mcp-limitless-server` process automatically when needed.
 
-## 🛠️ Available MCP Tools (v0.2.0)
+## 🛠️ Available MCP Tools (v0.3.1)
 
 ### 🎯 Smart & Intuitive (NEW!)
 
-6.  **`limitless_get_by_natural_time`** - Natural language time queries
-    - **Examples:** "today", "yesterday", "this morning", "past week", "last Monday"
-    - **Perfect for:** Quick date-based queries without manual calculations
+6.  **`limitless_get_by_natural_time`** - Natural language time queries ✨ **ENHANCED in v0.3.0**
+    - **Basic:** "today", "yesterday", "tomorrow"
+    - **Time periods:** "this morning", "yesterday afternoon", "last night", "tomorrow evening"
+    - **Calendar:** "last month", "this month", "next month", "this year", "last year" 🆕
+    - **Weeks:** "this week", "last week", "next week", "past 2 weeks" 🆕
+    - **Weekends:** "this weekend", "last weekend", "next weekend" 🆕
+    - **Relative:** "past 5 days", "3 days ago", "in 2 days", "recently", "the other day" 🆕
+    - **Business:** "Q1", "Q2", "Q3", "Q4", "this quarter", "last quarter" 🆕
+    - **Boundaries:** "beginning of the month", "end of the week", "start of the month" 🆕
+    - **Same-day:** "earlier today", "earlier", "later today" 🆕
+    - **Perfect for:** Natural conversation queries like "What did I discuss last month?"
 
 7.  **`limitless_detect_meetings`** - Automatic meeting detection & analysis  
     - **Intelligence:** Participant extraction, topics, action items, duration
@@ -222,6 +236,14 @@ If your `mcpServers` object already contains other servers (like `"notion": {...
     - **Intelligence:** Context-aware, priority inference, assignee detection
     - **Perfect for:** "What do I need to do from today's meetings?"
 
+12. **`limitless_get_raw_transcript`** - Extract clean transcripts for AI processing 🆕
+    - **Formats:** raw_text, verbatim, structured, timestamps, speakers_only
+    - **Perfect for:** "Give me the exact transcript without formatting"
+
+13. **`limitless_get_detailed_analysis`** - Technical precision analysis 🆕
+    - **Focus areas:** technical, financial, decisions, research, all
+    - **Perfect for:** "What were the exact specifications mentioned?"
+
 ### 📚 Core Foundation Tools
 
 1.  **`limitless_get_lifelog_by_id`**: Retrieves a single Pendant recording by its specific ID.
@@ -229,6 +251,51 @@ If your `mcpServers` object already contains other servers (like `"notion": {...
 3.  **`limitless_list_lifelogs_by_range`**: Lists Pendant recordings within a date/time range.
 4.  **`limitless_list_recent_lifelogs`**: Lists the most recent Pendant recordings.
 5.  **`limitless_search_lifelogs`**: Searches title/content of *recent* Pendant recordings (limited scope).
+
+## 📅 Supported Natural Time Expressions (v0.3.1)
+
+The enhanced time parser now supports over 50 natural language expressions:
+
+### Basic Time References
+- `today`, `yesterday`, `tomorrow`
+- `morning`, `afternoon`, `evening`, `tonight`
+- `earlier today`, `earlier`, `later today`
+
+### Specific Time Periods
+- `yesterday morning`, `yesterday afternoon`, `yesterday evening`, `last night`
+- `tomorrow morning`, `tomorrow afternoon`, `tomorrow evening`
+- `this morning`, `this afternoon`, `this evening`
+
+### Calendar Periods 🆕
+- **Months**: `last month`, `this month`, `next month`
+- **Years**: `last year`, `this year`
+- **Quarters**: `Q1`, `Q2`, `Q3`, `Q4`, `this quarter`, `last quarter`
+
+### Week & Weekend References 🆕
+- `this week`, `last week`, `next week`
+- `this weekend`, `last weekend`, `next weekend`
+
+### Flexible Relative Expressions 🆕
+- **Past**: `past N days/weeks/months` (e.g., `past 5 days`, `past 2 weeks`)
+- **Ago**: `N days/weeks/months ago` (e.g., `3 days ago`, `2 weeks ago`)
+- **Future**: `in N days/weeks/months` (e.g., `in 2 days`, `in a week`)
+
+### Informal References 🆕
+- `recently` (past 14 days)
+- `the other day` (2-4 days ago)
+- `a few days ago` (2-4 days ago)
+- `a couple days ago` (exactly 2 days ago)
+
+### Boundary References 🆕
+- `beginning of the week`, `start of the week`
+- `end of the week`
+- `beginning of the month`, `start of the month`
+- `end of the month`
+
+### Day Names
+- `monday`, `tuesday`, `wednesday`, etc.
+- `last monday`, `next friday`
+- `last tuesday` (most recent Tuesday)
 
 ## Notes & Limitations
 
@@ -249,7 +316,7 @@ This server uses `stdio` and is meant to be launched by an MCP-compatible client
 
 ## 🔬 Technical Architecture
 
-**v0.2.0 Advanced Features:**
+**v0.3.1 Advanced Features:**
 - **Natural Language Processing:** Robust time expression parser with timezone support
 - **Machine Learning Patterns:** Intelligent meeting detection using speaker analysis
 - **Context-Aware Search:** Full-text search with relevance scoring and context inclusion
