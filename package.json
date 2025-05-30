@@ -1,0 +1,59 @@
+{
+  "name": "199bio-mcp-limitless-server",
+  "version": "0.2.0",
+  "description": "Advanced MCP Server with AI-powered Limitless API features: natural time queries, meeting detection, action item extraction, daily summaries, and speaker analytics",
+  "license": "MIT",
+  "author": "Boris Djordjevic <boris@199longevity.com> (199 Longevity), Ryan Boyle (Original)",
+  "type": "module",
+  "main": "dist/server.js",
+  "bin": {
+    "mcp-limitless-server": "./dist/server.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsx watch --clear-screen=false src/server.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.8.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol", 
+    "limitless",
+    "lifelog",
+    "pendant",
+    "ai",
+    "assistant",
+    "claude",
+    "meeting-detection",
+    "action-items",
+    "natural-language",
+    "analytics",
+    "productivity",
+    "199-longevity"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/199-biotechnologies/limitless-bettermcp.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}
