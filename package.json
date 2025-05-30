@@ -7,7 +7,7 @@
   "type": "module",
   "main": "dist/server.js",
   "bin": {
-    "mcp-limitless-server": "./dist/server.js"
+    "mcp-limitless-server": "dist/server.js"
   },
   "scripts": {
     "build": "tsc",
@@ -34,7 +34,7 @@
   ],
   "keywords": [
     "mcp",
-    "model-context-protocol", 
+    "model-context-protocol",
     "limitless",
     "lifelog",
     "pendant",
@@ -50,7 +50,7 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/199-biotechnologies/limitless-bettermcp.git"
+    "url": "git+https://github.com/199-biotechnologies/limitless-bettermcp.git"
   },
   "publishConfig": {
     "access": "public",
