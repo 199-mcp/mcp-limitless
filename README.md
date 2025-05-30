@@ -1,5 +1,5 @@
-# Advanced Limitless MCP Server (v0.2.0) 🚀
-![Version](https://img.shields.io/badge/version-0.2.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
+# Advanced Limitless MCP Server (v0.3.0) 🚀
+![Version](https://img.shields.io/badge/version-0.3.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
 
 An **intelligent MCP (Model Context Protocol) server** that transforms your Limitless Pendant data into actionable insights for AI tools like Claude, Windsurf, and others. This enhanced version provides advanced features like natural language time queries, automatic meeting detection, smart action item extraction, and comprehensive daily summaries.
 
@@ -15,7 +15,13 @@ An **intelligent MCP (Model Context Protocol) server** that transforms your Limi
 | **Speaker Analysis** | Basic speaker names only | Full conversation analytics with patterns | 👥 **Deep relationship insights** |
 | **User Experience** | 3-5 tool calls for simple tasks | 1 tool call with intelligent results | ⚡ **5x faster workflows** |
 
-**✨ What's New in v0.2.0:**
+**✨ What's New in v0.3.0:**
+- 📄 **Raw Transcript Extraction** - Clean, AI-optimized transcript formats
+- 🔬 **Detailed Technical Analysis** - Precision extraction of scientific/medical terms
+- 🎯 **Multi-Format Support** - Raw text, verbatim, structured, timestamps
+- 📊 **Enhanced Context Preservation** - Maximum technical detail retention
+
+**Previous v0.2.0 Features:**
 - 🕒 **Natural Time Queries** - "yesterday", "this morning", "past week"
 - 🤝 **Smart Meeting Detection** - Automatic participant and topic extraction
 - 🔍 **Full History Search** - Search ALL lifelogs with intelligent context
@@ -44,11 +50,11 @@ You can run this intelligent MCP server directly using npx without any installat
 }
 ```
 
-This automatically downloads v0.2.0 with all advanced features when your MCP client starts.
+This automatically downloads v0.3.0 with all advanced features when your MCP client starts.
 
 ## 🎯 Perfect for Claude AI Users
 
-The v0.2.0 upgrade transforms your Claude conversations with Limitless data:
+The v0.3.0 upgrade transforms your Claude conversations with Limitless data:
 
 **Before:** "Let me check your logs... *reads through everything* ... based on my analysis..."  
 **After:** "What action items came from today's meetings?" → *Instant intelligent response*

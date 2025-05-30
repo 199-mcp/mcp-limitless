@@ -511,11 +511,111 @@ export class MeetingDetector {
 
     private static generateMeetingSummary(lifelogs: Lifelog[], participants: MeetingParticipant[], topics: string[]): string {
         const participantNames = participants.map(p => p.name).join(", ");
-        const topicList = topics.length > 0 ? ` Main topics: ${topics.join(", ")}.` : "";
         const duration = Math.round((new Date(lifelogs[lifelogs.length - 1].endTime).getTime() - 
                                    new Date(lifelogs[0].startTime).getTime()) / (1000 * 60));
         
-        return `${duration}-minute meeting with ${participantNames}.${topicList}`;
+        // Extract key technical details, numbers, and specific information
+        const allNodes: LifelogContentNode[] = [];
+        for (const lifelog of lifelogs) {
+            if (lifelog.contents) {
+                allNodes.push(...lifelog.contents);
+            }
+        }
+        const technicalDetails = this.extractTechnicalDetails(lifelogs);
+        const numbersAndFigures = this.extractNumbersAndFigures(lifelogs);
+        const keyDecisions = this.extractDecisions(allNodes);
+        
+        let summary = `${duration}-minute meeting with ${participantNames}.`;
+        
+        if (topics.length > 0) {
+            summary += ` Topics covered: ${topics.join(", ")}.`;
+        }
+        
+        if (technicalDetails.length > 0) {
+            summary += ` Technical elements discussed: ${technicalDetails.slice(0, 5).join(", ")}.`;
+        }
+        
+        if (numbersAndFigures.length > 0) {
+            summary += ` Key figures mentioned: ${numbersAndFigures.slice(0, 8).join(", ")}.`;
+        }
+        
+        if (keyDecisions.length > 0) {
+            summary += ` Decisions made: ${keyDecisions.slice(0, 3).join("; ")}.`;
+        }
+        
+        return summary;
+    }
+
+    private static extractTechnicalDetails(lifelogs: Lifelog[]): string[] {
+        const technicalTerms = new Set<string>();
+        const technicalPatterns = [
+            // Scientific and medical terms
+            /\b[A-Z][a-z]+(?:ine|ase|oid|gen|ide|ate|ium|sis|tion|logy|graphy|metry|scopy|therapy|diagnosis)\b/g,
+            // Technical abbreviations and acronyms
+            /\b[A-Z]{2,6}\b/g,
+            // Software/technology terms
+            /\b(?:API|SDK|REST|GraphQL|JSON|XML|HTTP|HTTPS|SQL|NoSQL|CI\/CD|DevOps|ML|AI|GPU|CPU|RAM|SSD|IoT|VR|AR|blockchain|cryptocurrency|algorithm|database|server|cloud|kubernetes|docker|microservice)\b/gi,
+            // Scientific units and measurements
+            /\b\d+(?:\.\d+)?\s*(?:mg|kg|ml|cm|mm|km|hz|ghz|mb|gb|tb|fps|rpm|°[CF]|pH|ppm|mol|atm|bar|pascal|joule|watt|volt|amp|ohm)\b/gi,
+            // Chemical formulas
+            /\b[A-Z][a-z]?\d*(?:[A-Z][a-z]?\d*)*\b/g,
+            // Version numbers and model numbers
+            /\bv?\d+\.\d+(?:\.\d+)*\b|\b[A-Z]+\d+[A-Z]*\d*\b/gi
+        ];
+
+        for (const lifelog of lifelogs) {
+            if (lifelog.contents) {
+                for (const node of lifelog.contents) {
+                    if (node.content) {
+                        for (const pattern of technicalPatterns) {
+                            const matches = node.content.match(pattern) || [];
+                            matches.forEach(match => {
+                                if (match.length > 2) {
+                                    technicalTerms.add(match);
+                                }
+                            });
+                        }
+                    }
+                }
+            }
+        }
+
+        return Array.from(technicalTerms).slice(0, 10);
+    }
+
+    private static extractNumbersAndFigures(lifelogs: Lifelog[]): string[] {
+        const figures = new Set<string>();
+        const numberPatterns = [
+            // Percentages and ratios
+            /\b\d+(?:\.\d+)?%\b|\b\d+:\d+\b|\b\d+\/\d+\b/g,
+            // Currency amounts
+            /\$\d+(?:,\d{3})*(?:\.\d{2})?\b|\b\d+(?:,\d{3})*(?:\.\d{2})?\s*(?:dollars?|USD|EUR|GBP|million|billion|thousand|k)\b/gi,
+            // Large numbers with commas
+            /\b\d{1,3}(?:,\d{3})+(?:\.\d+)?\b/g,
+            // Time durations with specific units
+            /\b\d+(?:\.\d+)?\s*(?:hours?|minutes?|seconds?|days?|weeks?|months?|years?|milliseconds?|microseconds?)\b/gi,
+            // Dates with specific formats
+            /\b(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{1,2},?\s+\d{4}\b/gi,
+            // Scientific notation
+            /\b\d+(?:\.\d+)?[eE][+-]?\d+\b/g,
+            // Specific measurements
+            /\b\d+(?:\.\d+)?\s*(?:x|×)\s*\d+(?:\.\d+)?\b/g
+        ];
+
+        for (const lifelog of lifelogs) {
+            if (lifelog.contents) {
+                for (const node of lifelog.contents) {
+                    if (node.content) {
+                        for (const pattern of numberPatterns) {
+                            const matches = node.content.match(pattern) || [];
+                            matches.forEach(match => figures.add(match));
+                        }
+                    }
+                }
+            }
+        }
+
+        return Array.from(figures).slice(0, 15);
     }
 }
 
@@ -525,11 +625,22 @@ export class MeetingDetector {
 
 export class ActionItemExtractor {
     private static readonly ACTION_PATTERNS = [
-        /\b(I'll|I will|I need to|I should|I must)\s+([^.!?]*)/gi,
-        /\b(todo|to do|action item|task):\s*([^.!?]*)/gi,
-        /\b(follow up|follow-up)\s+(on|with)\s+([^.!?]*)/gi,
-        /\b(need to|should|must|will)\s+(send|call|email|schedule|review|update|create|finish|complete)\s+([^.!?]*)/gi,
-        /\b(by\s+\w+day|by\s+\d+|before\s+\d+|deadline)\s*:?\s*([^.!?]*)/gi
+        // Direct commitments with technical context
+        /\b(I'll|I will|I need to|I should|I must)\s+([^.!?]{5,150})/gi,
+        // Explicit action items with detailed context
+        /\b(todo|to do|action item|task|deliverable):\s*([^.!?]{5,200})/gi,
+        // Follow-up actions with specifics
+        /\b(follow up|follow-up)\s+(on|with)\s+([^.!?]{5,150})/gi,
+        // Specific actions with verbs and context
+        /\b(need to|should|must|will|have to)\s+(send|call|email|schedule|review|update|create|finish|complete|implement|develop|test|deploy|analyze|research|investigate|prepare|draft|submit|approve)\s+([^.!?]{5,200})/gi,
+        // Deadlines with detailed context
+        /\b(by\s+(?:next\s+)?(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday|week|month)|by\s+\d+|before\s+\d+|deadline|due)\s*:?\s*([^.!?]{10,200})/gi,
+        // Technical implementation tasks
+        /\b(implement|develop|build|code|write|design|architect|deploy|configure|setup|install|upgrade|migrate|optimize|refactor|debug|fix|patch)\s+([^.!?]{10,200})/gi,
+        // Research and analysis tasks
+        /\b(research|investigate|analyze|evaluate|assess|review|study|examine|explore|compare)\s+([^.!?]{10,200})/gi,
+        // Decision-making commitments
+        /\b(decide|determine|choose|select|finalize|confirm|approve|reject)\s+([^.!?]{10,200})/gi
     ];
 
     static extractFromNodes(nodes: LifelogContentNode[], lifelogId: string): ActionItem[] {
@@ -566,15 +677,27 @@ export class ActionItemExtractor {
     }
 
     private static getContext(nodes: LifelogContentNode[], currentIndex: number): string {
-        const contextRange = 2;
+        const contextRange = 3; // Increased for more context
         const start = Math.max(0, currentIndex - contextRange);
         const end = Math.min(nodes.length, currentIndex + contextRange + 1);
         
-        return nodes.slice(start, end)
-            .map(node => node.content)
-            .filter(content => content && content.trim())
-            .join(" ")
-            .slice(0, 200) + "...";
+        const contextNodes = nodes.slice(start, end);
+        let context = "";
+        
+        // Build rich context with speakers and technical details
+        for (let i = 0; i < contextNodes.length; i++) {
+            const node = contextNodes[i];
+            if (!node.content || !node.content.trim()) continue;
+            
+            const isCurrentNode = (start + i) === currentIndex;
+            const speaker = node.speakerName ? `${node.speakerName}: ` : "";
+            const marker = isCurrentNode ? ">>> " : "";
+            
+            context += `${marker}${speaker}${node.content.trim()} `;
+        }
+        
+        // Preserve technical terms, numbers, and specific details in context
+        return context.slice(0, 400).trim() + (context.length > 400 ? "..." : "");
     }
 
     private static inferPriority(content: string): "high" | "medium" | "low" {

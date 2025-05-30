@@ -20,6 +20,11 @@ import {
     DailySummaryGenerator,
     SpeakerAnalyticsEngine
 } from "./search-and-analytics.js";
+import {
+    TranscriptExtractor,
+    TranscriptOptions,
+    DetailedTranscript
+} from "./transcript-extraction.js";
 
 // --- Constants ---
 const MAX_LIFELOG_LIMIT = 100;
@@ -114,12 +119,30 @@ const ActionItemsArgsSchema = {
     priority: z.enum(["high", "medium", "low"]).optional().describe("Filter by priority level."),
 };
 
+const RawTranscriptArgsSchema = {
+    lifelog_id: z.string().optional().describe("Specific lifelog ID to extract transcript from. If not provided, uses time_expression."),
+    time_expression: z.string().optional().describe("Natural time expression like 'today', 'this meeting', 'past hour' (defaults to 'today')."),
+    format: z.enum(["raw_text", "verbatim", "structured", "timestamps", "speakers_only"]).optional().default("structured").describe("Output format: raw_text (clean text for AI), verbatim (speaker: content), structured (detailed with context), timestamps (with time markers), speakers_only (just spoken content)."),
+    include_timestamps: z.boolean().optional().default(true).describe("Include precise timing information."),
+    include_speakers: z.boolean().optional().default(true).describe("Include speaker identification and names."),
+    include_context: z.boolean().optional().default(true).describe("Include surrounding context and technical details."),
+    preserve_technical_terms: z.boolean().optional().default(true).describe("Preserve scientific, medical, and technical terminology exactly as spoken."),
+    timezone: z.string().optional().describe("IANA timezone for time calculations."),
+};
+
+const DetailedAnalysisArgsSchema = {
+    time_expression: z.string().optional().describe("Natural time expression like 'today', 'this week' (defaults to 'today')."),
+    timezone: z.string().optional().describe("IANA timezone for date calculations."),
+    focus_area: z.enum(["technical", "financial", "decisions", "research", "all"]).optional().default("all").describe("Focus analysis on specific areas: technical (scientific/medical terms, specifications), financial (numbers, costs, budgets), decisions (choices made, conclusions), research (findings, data, studies), or all."),
+    preserve_precision: z.boolean().optional().default(true).describe("Maintain exact numbers, measurements, and technical specifications without rounding or generalization."),
+};
+
 
 // --- MCP Server Setup ---
 
 const server = new McpServer({
     name: "LimitlessMCP",
-    version: "0.2.0",
+    version: "0.3.0",
 }, {
     capabilities: {
         tools: {}
@@ -186,10 +209,26 @@ Available Tools:
 
 11. **limitless_extract_action_items**: Intelligently extract action items and tasks from conversations with context and priority analysis.
     - **SMART EXTRACTION:** Finds commitments, tasks, and follow-ups using natural language patterns
-    - **CONTEXTUAL INFORMATION:** Includes surrounding conversation and source timestamps
+    - **CONTEXTUAL INFORMATION:** Includes surrounding conversation and source timestamps  
     - **PRIORITY DETECTION:** Automatically infers priority based on language used
     - **USE FOR:** "What do I need to do?", "What action items came from today's meetings?"
     - Args: time_expression (opt, default 'today'), timezone (opt), assigned_to (opt), priority (opt)
+
+12. **limitless_get_raw_transcript**: Extract clean, unformatted transcripts optimized for AI processing with maximum detail preservation.
+    - **AI-OPTIMIZED:** Raw text format perfect for further AI analysis without markdown formatting
+    - **TECHNICAL PRECISION:** Preserves scientific, medical, and technical terminology exactly as spoken
+    - **FLEXIBLE FORMATS:** Multiple output formats from raw text to detailed structured transcripts
+    - **FULL CONTEXT:** Includes speaker information, timestamps, and surrounding conversation context
+    - **USE FOR:** "Give me the exact transcript", "What were the precise technical details discussed?"
+    - Args: lifelog_id (opt), time_expression (opt, default 'today'), format (opt, default 'structured'), include_timestamps, include_speakers, include_context, preserve_technical_terms, timezone
+
+13. **limitless_get_detailed_analysis**: Deep analysis focused on technical details, figures, anecdotes, and specific information rather than generalizations.
+    - **PRECISION FOCUS:** Extracts exact numbers, measurements, scientific terms, and technical specifications
+    - **NO GENERALIZATION:** Maintains specific facts, figures, and technical details without summarization
+    - **DOMAIN EXPERTISE:** Properly handles scientific, medical, financial, and technical terminology
+    - **CONTEXTUAL ANALYSIS:** Provides detailed analysis with supporting evidence and specific examples
+    - **USE FOR:** "What were the exact technical specifications mentioned?", "Give me all the specific numbers and figures discussed"
+    - Args: time_expression (opt, default 'today'), timezone (opt), focus_area (opt, default 'all'), preserve_precision (opt, default true)
 `
 });
 
@@ -502,6 +541,206 @@ server.tool("limitless_extract_action_items",
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             return { content: [{ type: "text", text: `Error extracting action items: ${errorMessage}` }], isError: true };
+        }
+    }
+);
+
+// Raw Transcript Extraction Tool
+server.tool("limitless_get_raw_transcript",
+    "Extract clean, unformatted transcripts optimized for AI processing. Preserves technical terminology, scientific terms, and specific details exactly as spoken without markdown formatting or summarization.",
+    RawTranscriptArgsSchema,
+    async (args, _extra) => {
+        try {
+            let lifelogs: Lifelog[] = [];
+            
+            if (args.lifelog_id) {
+                // Get specific lifelog by ID
+                const lifelog = await getLifelogById(limitlessApiKey, args.lifelog_id, {
+                    includeMarkdown: true,
+                    includeHeadings: true
+                });
+                lifelogs = [lifelog];
+            } else {
+                // Get lifelogs by time expression
+                const timeExpression = args.time_expression || 'today';
+                const parser = new NaturalTimeParser({ timezone: args.timezone });
+                const timeRange = parser.parseTimeExpression(timeExpression);
+                
+                const apiOptions: LifelogParams = {
+                    start: timeRange.start,
+                    end: timeRange.end,
+                    timezone: timeRange.timezone,
+                    includeMarkdown: true,
+                    includeHeadings: true,
+                    limit: 1000,
+                    direction: 'asc'
+                };
+                
+                lifelogs = await getLifelogs(limitlessApiKey, apiOptions);
+            }
+            
+            if (lifelogs.length === 0) {
+                return { content: [{ type: "text", text: "No lifelogs found for the specified criteria." }] };
+            }
+            
+            const transcriptOptions: TranscriptOptions = {
+                format: args.format,
+                includeTimestamps: args.include_timestamps,
+                includeSpeakers: args.include_speakers,
+                includeContext: args.include_context,
+                preserveFormatting: args.preserve_technical_terms
+            };
+            
+            if (lifelogs.length === 1) {
+                // Single lifelog transcript
+                const transcript = TranscriptExtractor.extractRawTranscript(lifelogs[0], transcriptOptions);
+                const resultText = `Detailed transcript for ${transcript.title}:\n\n${JSON.stringify(transcript, null, 2)}`;
+                return { content: [{ type: "text", text: resultText }] };
+            } else {
+                // Multiple lifelogs combined transcript
+                const result = TranscriptExtractor.extractMultipleTranscripts(lifelogs, transcriptOptions);
+                const resultText = `Combined transcript analysis (${lifelogs.length} lifelogs):\n\n${JSON.stringify(result, null, 2)}`;
+                return { content: [{ type: "text", text: resultText }] };
+            }
+            
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return { content: [{ type: "text", text: `Error extracting transcript: ${errorMessage}` }], isError: true };
+        }
+    }
+);
+
+// Detailed Analysis Tool (focused on precision and technical details)
+server.tool("limitless_get_detailed_analysis",
+    "Deep analysis focused on technical details, exact figures, scientific terminology, and specific information. Preserves precision without generalization - ideal for extracting exact specifications, measurements, and technical discussions.",
+    DetailedAnalysisArgsSchema,
+    async (args, _extra) => {
+        try {
+            const timeExpression = args.time_expression || 'today';
+            const parser = new NaturalTimeParser({ timezone: args.timezone });
+            const timeRange = parser.parseTimeExpression(timeExpression);
+            
+            const apiOptions: LifelogParams = {
+                start: timeRange.start,
+                end: timeRange.end,
+                timezone: timeRange.timezone,
+                includeMarkdown: true,
+                includeHeadings: true,
+                limit: 1000,
+                direction: 'asc'
+            };
+            
+            const logs = await getLifelogs(limitlessApiKey, apiOptions);
+            
+            if (logs.length === 0) {
+                return { content: [{ type: "text", text: `No detailed information found for "${timeExpression}".` }] };
+            }
+            
+            // Extract detailed transcripts with maximum context preservation
+            const transcriptOptions: TranscriptOptions = {
+                format: "structured",
+                includeTimestamps: true,
+                includeSpeakers: true,
+                includeContext: true,
+                preserveFormatting: true
+            };
+            
+            const detailedAnalysis = {
+                timeRange: `${timeRange.start} to ${timeRange.end}`,
+                totalLifelogs: logs.length,
+                focusArea: args.focus_area,
+                preservePrecision: args.preserve_precision,
+                analysis: [] as any[]
+            };
+            
+            for (const lifelog of logs) {
+                const transcript = TranscriptExtractor.extractRawTranscript(lifelog, transcriptOptions);
+                
+                // Focus analysis based on requested area
+                let focusedContent: any = {};
+                
+                switch (args.focus_area) {
+                    case "technical":
+                        focusedContent = {
+                            technicalTerms: transcript.metadata.technicalTermsFound,
+                            specifications: transcript.segments.filter(s => 
+                                /\b(?:specification|spec|requirement|parameter|protocol|algorithm|implementation|architecture|design|version|model|standard)\b/i.test(s.content)
+                            ),
+                            measurements: transcript.metadata.numbersAndFigures.filter(f => 
+                                /\b\d+(?:\.\d+)?\s*(?:mg|kg|ml|cm|mm|km|hz|ghz|mb|gb|tb|fps|rpm|°[CF]|pH|ppm|mol|atm|bar|pascal|joule|watt|volt|amp|ohm)\b/i.test(f)
+                            )
+                        };
+                        break;
+                        
+                    case "financial":
+                        focusedContent = {
+                            monetaryFigures: transcript.metadata.numbersAndFigures.filter(f => 
+                                /\$|budget|cost|price|revenue|profit|expense|dollar|EUR|GBP|million|billion/i.test(f)
+                            ),
+                            percentages: transcript.metadata.numbersAndFigures.filter(f => f.includes('%')),
+                            financialTerms: transcript.segments.filter(s => 
+                                /\b(?:budget|cost|price|revenue|profit|loss|expense|investment|ROI|funding|valuation|equity|debt|cash flow|EBITDA|margin)\b/i.test(s.content)
+                            )
+                        };
+                        break;
+                        
+                    case "decisions":
+                        focusedContent = {
+                            decisions: transcript.segments.filter(s => 
+                                /\b(?:decided|decision|agreed|concluded|determined|chose|selected|approved|rejected|final|consensus)\b/i.test(s.content)
+                            ),
+                            keyChoices: transcript.metadata.keyPhrases.filter(p => 
+                                /\b(?:decide|determine|choose|select|go with|option|alternative)\b/i.test(p)
+                            )
+                        };
+                        break;
+                        
+                    case "research":
+                        focusedContent = {
+                            findings: transcript.segments.filter(s => 
+                                /\b(?:study|research|data|analysis|results|findings|evidence|statistics|survey|experiment|trial|test)\b/i.test(s.content)
+                            ),
+                            citations: transcript.segments.filter(s => 
+                                /\b(?:according to|source|reference|cited|published|journal|paper|article|report)\b/i.test(s.content)
+                            ),
+                            methodology: transcript.segments.filter(s => 
+                                /\b(?:method|methodology|approach|technique|process|procedure|protocol|framework)\b/i.test(s.content)
+                            )
+                        };
+                        break;
+                        
+                    default: // "all"
+                        focusedContent = {
+                            technicalTerms: transcript.metadata.technicalTermsFound,
+                            numbersAndFigures: transcript.metadata.numbersAndFigures,
+                            keyPhrases: transcript.metadata.keyPhrases,
+                            decisions: transcript.segments.filter(s => 
+                                /\b(?:decided|decision|agreed|concluded)\b/i.test(s.content)
+                            ),
+                            specificDetails: transcript.segments.filter(s => 
+                                s.content.length > 50 && // Longer, more detailed segments
+                                (/\b(?:\d+(?:\.\d+)?|\$|%|version|model|specification|exactly|precisely|specifically)\b/i.test(s.content))
+                            )
+                        };
+                }
+                
+                detailedAnalysis.analysis.push({
+                    lifelogId: lifelog.id,
+                    title: transcript.title,
+                    duration: `${Math.round(transcript.totalDuration / 60000)} minutes`,
+                    participants: transcript.metadata.uniqueSpeakers,
+                    wordCount: transcript.metadata.wordCount,
+                    focusedContent,
+                    fullTranscript: args.preserve_precision ? transcript.formattedTranscript : transcript.rawText
+                });
+            }
+            
+            const resultText = `Detailed analysis for "${timeExpression}" (Focus: ${args.focus_area}):\n\n${JSON.stringify(detailedAnalysis, null, 2)}`;
+            return { content: [{ type: "text", text: resultText }] };
+            
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return { content: [{ type: "text", text: `Error generating detailed analysis: ${errorMessage}` }], isError: true };
         }
     }
 );
