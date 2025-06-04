@@ -1,7 +1,14 @@
-# Advanced Limitless MCP Server (v0.6.0) 🚀
-![Version](https://img.shields.io/badge/version-0.6.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
+# Lean Limitless MCP Server (v0.7.0) 🎯
+![Version](https://img.shields.io/badge/version-0.7.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
 
-An **intelligent MCP (Model Context Protocol) server** that transforms your Limitless Pendant data into actionable intelligence for AI tools like Claude, Windsurf, and others. Version 0.6.0 introduces the revolutionary **Speech Vitality Index (SVI)** - a single, reliable health score from quality conversations, replacing complex biomarkers with trustworthy simplicity.
+**Less code, more reliability.** A lean MCP server for Limitless Pendant that focuses on doing a few things extremely well:
+
+- **Speech Vitality Index** - One reliable health score (0-100) from quality conversations only
+- **Meeting Detection** - Automatic extraction of participants, topics, and action items
+- **Smart Search** - Natural language queries across your entire conversation history
+- **Transcript Extraction** - Clean, AI-ready transcripts for analysis
+
+v0.7.0 removes 60% of the codebase to focus on reliability over features.
 
 ## 📑 Table of Contents
 
@@ -44,21 +51,31 @@ An **intelligent MCP (Model Context Protocol) server** that transforms your Limi
 | **Honesty** | N/A | "Insufficient data" when appropriate | 🎯 **Trustworthy** |
 | **User Experience** | 3-5 tool calls for simple tasks | 1 tool call with intelligent results | ⚡ **5x faster workflows** |
 
-**✨ What's New in v0.6.0 - The Simplification Update:**
-- 🎯 **Speech Vitality Index (SVI)** - One reliable score (0-100) replacing 20+ complex biomarkers
-- ✅ **Quality-First Analysis** - Only analyzes 5+ minute conversations with clear audio
-- 📊 **Simple Components** - Fluency (words per burst), Energy (dynamic range), Consistency (stability)
-- 🚫 **No Bad Data** - Rejects poor quality segments instead of statistical guessing
-- 📈 **Clear Trends** - "Improving", "Stable", "Declining", or "Insufficient Data"
-- 💡 **Actionable Insights** - "Have a conversation" not "Your pause duration is 2.3σ above normal"
+## 📦 What's In The Box (v0.7.0)
 
-**Why the Change?**
-We applied Occam's Razor: Better to be a reliable flashlight than an unreliable lighthouse. The pendant records ~30% of your day randomly - trying to extract 24/7 health insights from this was like measuring running speed by randomly sampling your day. Now we focus on what we can measure well: quality conversations.
+### Core Features (Lean & Reliable)
+1. **Speech Vitality Index** - One score from quality conversations
+2. **Meeting Tools** - Detection, action items, summaries
+3. **Search & Analytics** - Natural language queries
+4. **Transcript Extraction** - Clean, structured output
 
-**Legacy Features (v0.4.0-v0.5.1):**
-- Complex speech biomarkers with 20+ metrics (replaced by SVI)
-- Population percentiles and statistical analysis (removed - context-dependent)
-- Multiple health scores and predictions (simplified to one score)
+### What We Removed (And Why)
+- ❌ 20+ complex biomarkers → Unreliable with partial data
+- ❌ Environmental activity analysis → Too many assumptions
+- ❌ Sleep detection → Can't distinguish from pendant-off
+- ❌ Energy/fatigue predictions → Requires consistent coverage
+- ❌ Disfluency detection → Needs full conversation context
+- ❌ Statistical confidence intervals → False precision on bad data
+
+**Result:** 6 source files instead of 15+. Every line has a purpose.
+
+### Philosophy: Reliability > Features
+
+> "Better to be a reliable flashlight than an unreliable lighthouse."
+
+The pendant records ~30% of your day randomly. Previous versions tried to extract 24/7 health insights from this partial data using complex statistics. That's like measuring someone's running speed by randomly checking on them throughout the day - you'll mostly catch them sitting.
+
+Now we only analyze what we can measure reliably: quality conversations.
 
 **Previous v0.3.1 Features:**
 - 📅 **50+ Natural Time Expressions** - "last month", "tomorrow", "this weekend", etc.
@@ -240,72 +257,44 @@ If your `mcpServers` object already contains other servers (like `"notion": {...
 2.  Configure your MCP client as shown above.
 3.  Start your MCP client application. It will launch the `mcp-limitless-server` process automatically when needed.
 
-## 🛠️ Available MCP Tools (v0.5.0)
+## 🛠️ Available MCP Tools (v0.7.0 - Lean Focus)
 
-### 🎯 Smart & Intuitive (NEW!)
+### 🧠 Speech Health (Core)
 
-6.  **`limitless_get_by_natural_time`** - Natural language time queries ✨ **ENHANCED in v0.3.0**
-    - **Basic:** "today", "yesterday", "tomorrow"
-    - **Time periods:** "this morning", "yesterday afternoon", "last night", "tomorrow evening"
-    - **Calendar:** "last month", "this month", "next month", "this year", "last year" 🆕
-    - **Weeks:** "this week", "last week", "next week", "past 2 weeks" 🆕
-    - **Weekends:** "this weekend", "last weekend", "next weekend" 🆕
-    - **Relative:** "past 5 days", "3 days ago", "in 2 days", "recently", "the other day" 🆕
-    - **Business:** "Q1", "Q2", "Q3", "Q4", "this quarter", "last quarter" 🆕
-    - **Boundaries:** "beginning of the month", "end of the week", "start of the month" 🆕
-    - **Same-day:** "earlier today", "earlier", "later today" 🆕
-    - **Perfect for:** Natural conversation queries like "What did I discuss last month?"
+**speechclock** / **speechage** - Your Speech Vitality Score
+- Single reliable score (0-100) from quality conversations only
+- Trend analysis: "Improving", "Stable", "Declining", or "Insufficient Data"
+- Honest reporting: "Have a conversation" when no good data
 
-7.  **`limitless_detect_meetings`** - Automatic meeting detection & analysis  
-    - **Intelligence:** Participant extraction, topics, action items, duration
-    - **Perfect for:** "What meetings did I have today?"
+### 📅 Meeting Intelligence (Proven Reliable)
 
-8.  **`limitless_search_conversations_about`** - Full history search with context
-    - **Advanced:** Searches ALL lifelogs (not just recent 20), includes context
-    - **Perfect for:** "When did I last discuss Project Alpha?"
+- **limitless_detect_meetings** - Automatic meeting detection & analysis
+- **limitless_extract_action_items** - Smart task extraction with priorities
+- **limitless_get_daily_summary** - Comprehensive daily insights
+- **limitless_analyze_speaker** - Conversation analytics per person
 
-9.  **`limitless_get_daily_summary`** - Comprehensive daily insights
-    - **Analytics:** Meetings, action items, productivity metrics, key participants  
-    - **Perfect for:** "Give me a summary of yesterday"
+### 🔍 Search & Discovery (Essential)
 
-10. **`limitless_analyze_speaker`** - Detailed speaker analytics
-    - **Insights:** Speaking time, topics, interaction patterns, frequency
-    - **Perfect for:** "How much did I talk with Sarah this month?"
+- **limitless_get_by_natural_time** - "today", "last week", "past 3 days"
+- **limitless_search_conversations_about** - Full history search
+- **limitless_get_raw_transcript** - Clean transcripts for AI processing
+- **limitless_get_detailed_analysis** - Technical precision extraction
 
-11. **`limitless_extract_action_items`** - Smart task extraction
-    - **Intelligence:** Context-aware, priority inference, assignee detection
-    - **Perfect for:** "What do I need to do from today's meetings?"
+### 📊 Foundation Tools (Core API)
 
-12. **`limitless_get_raw_transcript`** - Extract clean transcripts for AI processing 🆕
-    - **Formats:** raw_text, verbatim, structured, timestamps, speakers_only
-    - **Perfect for:** "Give me the exact transcript without formatting"
+- **limitless_get_lifelog_by_id** - Single recording by ID
+- **limitless_list_lifelogs_by_date** - All recordings for specific date
+- **limitless_list_lifelogs_by_range** - Recordings within date range
+- **limitless_list_recent_lifelogs** - Most recent recordings
+- **limitless_search_lifelogs** - Basic text search
 
 13. **`limitless_get_detailed_analysis`** - Technical precision analysis 🆕
     - **Focus areas:** technical, financial, decisions, research, all
     - **Perfect for:** "What were the exact specifications mentioned?"
 
-14. **`speechclock`** / **`speechage`** - Speech Vitality Index (SVI) 🆕
-    - **What it is:** A single, reliable health score (0-100) calculated from quality conversations only
-    - **How it works:** 
-      - ✅ **Quality First:** Only analyzes 5+ minute conversations with clear audio
-      - 🎯 **Three Simple Components:** 
-        - Fluency: Words per speech burst (not per minute)
-        - Energy: Dynamic range and variation
-        - Consistency: Stability throughout conversation
-      - 📊 **Clear Trends:** "Improving", "Stable", "Declining", or "Insufficient Data"
-    - **Why it's revolutionary:** No fake statistics from bad data - if we can't measure it well, we don't measure it
-    - **Parameters:**
-      - `time_expression` (optional): "past 7 days" (default), "today", "this week", etc.
-      - `timezone` (optional): IANA timezone
-      - `detailed` (optional): Show component scores breakdown
-    - **Usage examples:**
-      - "What's my speechclock?" → "Speech Vitality: 82/100, Trend: Stable"
-      - "Show my speechage" → Simple score with actionable next steps
-    - **Output:** 
-      - Your SVI score (0-100) with confidence level
-      - Trend direction with confidence percentage
-      - Clear next action (e.g., "Have a 5+ minute conversation")
-      - Recent score history (if available)
+### 🔗 Legacy Support
+
+- **limitless_analyze_speech_biomarkers_legacy** - Redirects to speechclock
 
 ### 📚 Core Foundation Tools
 
