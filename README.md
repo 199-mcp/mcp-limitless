@@ -70,11 +70,11 @@ You can run this intelligent MCP server directly using npx without any installat
 }
 ```
 
-This automatically downloads v0.4.0 with revolutionary speech biomarker analysis when your MCP client starts.
+This automatically downloads v0.5.0 with advanced health monitoring features when your MCP client starts.
 
 ## 🎯 Perfect for Claude AI Users
 
-The v0.4.0 upgrade transforms your Claude conversations with Limitless data:
+The v0.5.0 upgrade transforms your Claude conversations with comprehensive health insights:
 
 **Before:** "Let me check your logs... *reads through everything* ... based on my analysis..."  
 **After:** "What action items came from today's meetings?" → *Instant intelligent response*
@@ -85,6 +85,11 @@ The v0.4.0 upgrade transforms your Claude conversations with Limitless data:
 - 👥 "How much did I talk with my manager this week?"
 - 🔍 "When did I last discuss the budget proposal?"
 - 📊 "Show me my productivity insights for today"
+- 🧠 "What's my speechclock?" - Get comprehensive health analysis
+- 😴 "Am I getting enough sleep?" - Detect sleep from quiet periods
+- ⚡ "When am I most energetic?" - Find your peak performance times
+- 🗣️ "Am I dominating conversations?" - Check speaking balance
+- 🔮 "Predict my energy for this afternoon" - Get fatigue forecasts
 
 > **What's MCP?**  
 > [Model Context Protocol](https://modelcontextprotocol.io/introduction) is an open standard for connecting AI models to external tools and data—think of it like the USB-C port or even the HTTP protocol for AI—universal, reliable, and designed for extensibility. The standard that everyone adopts. It enables rich integrations, custom workflows, and seamless communication between AI and the tools you use every day.
@@ -278,10 +283,18 @@ If your `mcpServers` object already contains other servers (like `"notion": {...
       - "Analyze my speech patterns from January to March"
       - "Am I showing signs of fatigue?"
       - "How's my cognitive load today?"
+      - "What are my peak social hours?"
+      - "Did I get enough sleep last night?"
+      - "Am I talking too much in conversations?"
+      - "Show my daily activity patterns"
+      - "When do I have the most energy?"
     - **Output:** Comprehensive health report including:
       - Statistical biomarkers with 95% confidence intervals
       - Rhythm consistency and fluency ratings
       - Energy levels and fatigue indicators
+      - Environmental activity patterns (speaking/listening/silent hours)
+      - Sleep detection and quality assessment
+      - Social patterns and conversational dynamics
       - Personal baseline deviations
       - Clinical insights and recommendations
       - Predictive risk assessments
@@ -293,6 +306,96 @@ If your `mcpServers` object already contains other servers (like `"notion": {...
 3.  **`limitless_list_lifelogs_by_range`**: Lists Pendant recordings within a date/time range.
 4.  **`limitless_list_recent_lifelogs`**: Lists the most recent Pendant recordings.
 5.  **`limitless_search_lifelogs`**: Searches title/content of *recent* Pendant recordings (limited scope).
+
+## 💬 Real-World Examples with v0.5.0 Features
+
+### 🧠 Health Monitoring Examples
+
+**Basic Health Check:**
+```
+User: "What's my speechclock today?"
+Claude: *Analyzes speech patterns, energy levels, and provides health insights*
+```
+
+**Fatigue Detection:**
+```
+User: "Am I showing signs of fatigue?"
+Claude: *Checks energy scores, speech rate decline, vocabulary simplification*
+```
+
+**Sleep Quality:**
+```
+User: "Did I get enough sleep last night?"
+Claude: *Detects quiet periods, estimates sleep duration, checks consistency*
+```
+
+### 🗣️ Communication Style Analysis
+
+**Conversation Balance:**
+```
+User: "Am I talking too much in meetings?"
+Claude: *Analyzes speaking ratio, conversational dominance, turn-taking patterns*
+```
+
+**Social Patterns:**
+```
+User: "What are my peak social hours?"
+Claude: *Identifies when you have most conversations, interaction intensity*
+```
+
+**Isolation Detection:**
+```
+User: "Am I spending too much time alone?"
+Claude: *Counts isolation periods, checks social engagement levels*
+```
+
+### ⚡ Performance Optimization
+
+**Energy Patterns:**
+```
+User: "When do I have the most energy?"
+Claude: *Shows circadian patterns, predicts high/low energy periods*
+```
+
+**Cognitive Load:**
+```
+User: "How's my cognitive load this week?"
+Claude: *Analyzes disfluencies, pause patterns, speech planning difficulty*
+```
+
+**Productivity Insights:**
+```
+User: "Show my speech patterns during work hours vs evenings"
+Claude: *Compares activity levels, fluency, and energy across time periods*
+```
+
+### 📊 Trend Analysis
+
+**Long-term Monitoring:**
+```
+User: "How have my speech patterns changed over the past month?"
+Claude: *Shows trends with statistical significance, confidence intervals*
+```
+
+**Baseline Comparison:**
+```
+User: "Am I deviating from my normal patterns?"
+Claude: *Compares current metrics to personal baseline, alerts on changes*
+```
+
+### 🏥 Clinical-Grade Analysis
+
+**Comprehensive Report:**
+```
+User: "Give me a full speech biomarker analysis for last week"
+Claude: *Provides detailed report with:*
+- Speech rate: 145 WPM [95% CI: 142-148]
+- Fluency score: 82/100
+- Energy level: 75/100 
+- Sleep detected: 7.2 hours average
+- Social intensity: 65%
+- Recommendations for improvement
+```
 
 ## 📅 Supported Natural Time Expressions (v0.5.0)
 
@@ -381,6 +484,12 @@ This server uses `stdio` and is meant to be launched by an MCP-compatible client
 - ✅ Comprehensive daily summaries with productivity insights
 - ✅ Speaker analytics with conversation patterns
 - ✅ Smart action item extraction with priority inference
+- ✅ Speech rhythm analysis with entropy calculation
+- ✅ Disfluency detection (fillers, repairs, hesitations)
+- ✅ Energy and fatigue assessment with predictions
+- ✅ Personal baseline tracking and deviation alerts
+- ✅ Environmental activity analysis and sleep detection
+- ✅ Integrated health scoring (0-100 scales)
 - ✅ Production-quality TypeScript architecture
 - ✅ Robust error handling and performance optimization
 
