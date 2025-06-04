@@ -1,5 +1,5 @@
-# Advanced Limitless MCP Server (v0.3.1) 🚀
-![Version](https://img.shields.io/badge/version-0.3.1-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
+# Advanced Limitless MCP Server (v0.4.0) 🚀
+![Version](https://img.shields.io/badge/version-0.4.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
 
 An **intelligent MCP (Model Context Protocol) server** that transforms your Limitless Pendant data into actionable insights for AI tools like Claude, Windsurf, and others. This enhanced version provides advanced features like natural language time queries, automatic meeting detection, smart action item extraction, and comprehensive daily summaries.
 
@@ -15,12 +15,18 @@ An **intelligent MCP (Model Context Protocol) server** that transforms your Limi
 | **Speaker Analysis** | Basic speaker names only | Full conversation analytics with patterns | 👥 **Deep relationship insights** |
 | **User Experience** | 3-5 tool calls for simple tasks | 1 tool call with intelligent results | ⚡ **5x faster workflows** |
 
-**✨ What's New in v0.3.1:**
+**✨ What's New in v0.4.0:**
+- 🧠 **Speech Biomarker Analysis** - Clinical-grade statistical analysis with confidence intervals and p-values
+- 🎯 **SpeechClock & SpeechAge** - Natural aliases for speech pattern monitoring ("What's my speechclock?")
+- 📊 **Population Percentiles** - Compare speech metrics vs. normal adult baselines (120-180 WPM)
+- 🔬 **Statistical Rigor** - Proper trend analysis, outlier detection, and reliability assessment
+- 📈 **Circadian Patterns** - Time-of-day speech variation analysis with significance testing
+
+**Previous v0.3.1 Features:**
 - 📅 **50+ Natural Time Expressions** - "last month", "tomorrow", "this weekend", etc.
 - 🎯 **Flexible Relative Dates** - "past 5 days", "in 2 weeks", "3 days ago"
 - 💼 **Business Time Support** - Quarters (Q1-Q4), year references, month boundaries
 - 🌅 **Enhanced Time Periods** - "yesterday afternoon", "tomorrow morning", "last night"
-- 🧠 **Speech Biomarker Analysis** - Rigorous statistical analysis of speech patterns for health monitoring
 
 **Previous v0.3.0 Features:**
 - 📄 **Raw Transcript Extraction** - Clean, AI-optimized transcript formats
@@ -57,11 +63,11 @@ You can run this intelligent MCP server directly using npx without any installat
 }
 ```
 
-This automatically downloads v0.3.1 with all advanced features when your MCP client starts.
+This automatically downloads v0.4.0 with revolutionary speech biomarker analysis when your MCP client starts.
 
 ## 🎯 Perfect for Claude AI Users
 
-The v0.3.1 upgrade transforms your Claude conversations with Limitless data:
+The v0.4.0 upgrade transforms your Claude conversations with Limitless data:
 
 **Before:** "Let me check your logs... *reads through everything* ... based on my analysis..."  
 **After:** "What action items came from today's meetings?" → *Instant intelligent response*
@@ -201,7 +207,7 @@ If your `mcpServers` object already contains other servers (like `"notion": {...
 2.  Configure your MCP client as shown above.
 3.  Start your MCP client application. It will launch the `mcp-limitless-server` process automatically when needed.
 
-## 🛠️ Available MCP Tools (v0.3.1)
+## 🛠️ Available MCP Tools (v0.4.0)
 
 ### 🎯 Smart & Intuitive (NEW!)
 
@@ -270,7 +276,7 @@ If your `mcpServers` object already contains other servers (like `"notion": {...
 4.  **`limitless_list_recent_lifelogs`**: Lists the most recent Pendant recordings.
 5.  **`limitless_search_lifelogs`**: Searches title/content of *recent* Pendant recordings (limited scope).
 
-## 📅 Supported Natural Time Expressions (v0.3.1)
+## 📅 Supported Natural Time Expressions (v0.4.0)
 
 The enhanced time parser now supports over 50 natural language expressions:
 
@@ -334,7 +340,7 @@ This server uses `stdio` and is meant to be launched by an MCP-compatible client
 
 ## 🔬 Technical Architecture
 
-**v0.3.1 Advanced Features:**
+**v0.4.0 Advanced Features:**
 - **Natural Language Processing:** Robust time expression parser with timezone support
 - **Machine Learning Patterns:** Intelligent meeting detection using speaker analysis
 - **Context-Aware Search:** Full-text search with relevance scoring and context inclusion
@@ -360,7 +366,7 @@ This server uses `stdio` and is meant to be launched by an MCP-compatible client
 - ✅ Production-quality TypeScript architecture
 - ✅ Robust error handling and performance optimization
 
-### 🔮 Planned Features (v0.3.0+)
+### 🔮 Planned Features (v0.5.0+)
 - 🔄 **Intelligent Caching Layer** - Smart caching for repeated queries
 - 🧪 **Unit Test Suite** - Comprehensive testing for all features
 - 📈 **Advanced Analytics** - Weekly/monthly productivity trends
@@ -379,5 +385,5 @@ Original foundation by **Ryan Boyle** (ipvr9).
 
 Have ideas, improvements, or feedback? Feel free to open an issue or PR—contributions are always welcome! Let's keep pushing the boundaries of what's possible with wearable context and intelligent tools.
 
-**Repository:** [https://github.com/199-biotechnologies/limitless-bettermcp](https://github.com/199-biotechnologies/limitless-bettermcp)  
+**Repository:** [https://github.com/199-biotechnologies/mcp-limitless-enhanced](https://github.com/199-biotechnologies/mcp-limitless-enhanced)  
 **NPM Package:** [https://www.npmjs.com/package/199bio-mcp-limitless-server](https://www.npmjs.com/package/199bio-mcp-limitless-server)
