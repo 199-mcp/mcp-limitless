@@ -143,10 +143,9 @@ const DetailedAnalysisArgsSchema = {
 };
 
 const SpeechBiomarkerArgsSchema = {
-    time_expression: z.string().optional().describe("Natural time expression like 'today', 'this week', 'past month' (defaults to available data)."),
+    time_expression: z.string().optional().describe("Natural time expression like 'today', 'this week', 'past month' (defaults to 'past 7 days')."),
     timezone: z.string().optional().describe("IANA timezone for date/time parameters."),
-    include_trends: z.boolean().optional().default(true).describe("Include statistical trend analysis with p-values and confidence intervals."),
-    include_percentiles: z.boolean().optional().default(true).describe("Include population percentile rankings vs. normal adults.")
+    detailed: z.boolean().optional().default(false).describe("Show component breakdown (fluency, energy, consistency scores).")
 };
 
 
@@ -154,7 +153,7 @@ const SpeechBiomarkerArgsSchema = {
 
 const server = new McpServer({
     name: "LimitlessMCP",
-    version: "0.7.1",
+    version: "0.7.3",
 }, {
     capabilities: {
         tools: {}
@@ -833,12 +832,6 @@ const speechVitalityHandler = async (args: any, _extra: RequestHandlerExtra): Pr
     }
 };
 
-// Legacy handler - redirects to simplified SVI
-const speechBiomarkerHandler = async (args: any, _extra: RequestHandlerExtra): Promise<CallToolResult> => {
-    return speechVitalityHandler(args, _extra);
-};
-// Main biomarker tool removed - use speechclock or speechage instead
-
 // Simplified Speech Vitality Tools
 server.tool("speechclock",
     "Your Speech Vitality Score - a simple, reliable measure of speech health. Tracks fluency, energy, and consistency from quality conversations only. Shows your score (0-100) and trend.",
@@ -850,13 +843,6 @@ server.tool("speechage",
     "Your Speech Vitality Score - a simple, reliable measure of speech health. Tracks fluency, energy, and consistency from quality conversations only. Shows your score (0-100) and trend.",
     SpeechBiomarkerArgsSchema,
     speechVitalityHandler
-);
-
-// Legacy biomarker tool (hidden from main list but still accessible)
-server.tool("limitless_analyze_speech_biomarkers_legacy",
-    "[LEGACY] Complex statistical analysis of speech patterns with 20+ biomarkers. Use speechclock or speechage for the simplified, more reliable Speech Vitality Score.",
-    SpeechBiomarkerArgsSchema,
-    speechBiomarkerHandler
 );
 
 // --- Server Startup ---
