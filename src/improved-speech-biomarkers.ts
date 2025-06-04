@@ -144,7 +144,7 @@ export class ImprovedSpeechBiomarkerAnalyzer {
     /**
      * Extract segments with validation and quality flags
      */
-    private static extractAndValidateSegments(lifelogs: Lifelog[]): ImprovedSpeechSegment[] {
+    static extractAndValidateSegments(lifelogs: Lifelog[]): ImprovedSpeechSegment[] {
         const segments: ImprovedSpeechSegment[] = [];
         
         for (const lifelog of lifelogs) {
@@ -485,7 +485,7 @@ export class ImprovedSpeechBiomarkerAnalyzer {
         return Math.max(1, Math.floor(segmentCount / 20)); // Assume ~20 segments per day
     }
     
-    private static createEmptyStatisticalResults(): StatisticalBiomarkers {
+    static createEmptyStatisticalResults(): StatisticalBiomarkers {
         const emptyResult: StatisticalResult = {
             value: 0,
             confidenceInterval: [0, 0],

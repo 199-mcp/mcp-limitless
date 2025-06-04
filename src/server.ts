@@ -29,6 +29,10 @@ import {
     ImprovedSpeechBiomarkerAnalyzer,
     StatisticalBiomarkers
 } from "./improved-speech-biomarkers.js";
+import {
+    ComprehensiveSpeechAnalyzer,
+    ComprehensiveSpeechAnalysis
+} from "./comprehensive-speech-analysis.js";
 
 // --- Constants ---
 const MAX_LIFELOG_LIMIT = 100;
@@ -811,8 +815,20 @@ const speechBiomarkerHandler = async (args: any, _extra: RequestHandlerExtra): P
                 };
             }
             
-            // Perform statistical speech analysis
-            const biomarkers = ImprovedSpeechBiomarkerAnalyzer.analyzeSpeechPatternsWithStats(lifelogs);
+            // Perform comprehensive speech analysis
+            const analysis = await ComprehensiveSpeechAnalyzer.analyzeComprehensively(
+                lifelogs,
+                'default-user', // TODO: Get actual user ID if available
+                {
+                    includeBaseline: true,
+                    timeRange: args.time_expression ? {
+                        start: lifelogs[0]?.startTime || new Date().toISOString(),
+                        end: lifelogs[lifelogs.length - 1]?.endTime || new Date().toISOString()
+                    } : undefined
+                }
+            );
+            
+            const biomarkers = analysis.coreMetrics;
             
             // Format results with proper scientific reporting
             let resultText = `🧠 SPEECH BIOMARKER ANALYSIS REPORT\n`;
@@ -841,6 +857,72 @@ const speechBiomarkerHandler = async (args: any, _extra: RequestHandlerExtra): P
             resultText += `  Sample size: n=${biomarkers.vocabularyComplexity.sampleSize}, SE=±${biomarkers.vocabularyComplexity.standardError.toFixed(3)}\n`;
             
             resultText += `Words per Turn: ${biomarkers.wordsPerTurn.value.toFixed(1)} [${biomarkers.wordsPerTurn.confidenceInterval[0].toFixed(1)}, ${biomarkers.wordsPerTurn.confidenceInterval[1].toFixed(1)}]\n\n`;
+            
+            // NEW: Advanced Rhythm Analysis
+            resultText += `🎵 SPEECH RHYTHM ANALYSIS\n`;
+            resultText += `Rhythm Consistency: ${(analysis.rhythmAnalysis.rhythmConsistency * 100).toFixed(1)}%\n`;
+            resultText += `Fluency Score: ${analysis.rhythmAnalysis.fluencyScore}/100\n`;
+            resultText += `Cognitive Load: ${(analysis.rhythmAnalysis.cognitiveLoadIndicator * 100).toFixed(1)}%\n`;
+            resultText += `Burst-Pause Ratio: ${analysis.rhythmAnalysis.burstPauseRatio.toFixed(2)}\n\n`;
+            
+            // NEW: Disfluency Analysis
+            resultText += `🗣️ SPEECH FLUENCY ANALYSIS\n`;
+            resultText += `Fluency Rating: ${analysis.disfluencyAnalysis.fluencyRating}/100\n`;
+            resultText += `Filler Words: ${analysis.disfluencyAnalysis.fillerWords.count} (${analysis.disfluencyAnalysis.fillerWords.rate.toFixed(1)} per 100 words)\n`;
+            resultText += `Speech Planning Difficulty: ${(analysis.disfluencyAnalysis.speechPlanningDifficulty * 100).toFixed(1)}%\n`;
+            resultText += `Cognitive Load Markers: ${analysis.disfluencyAnalysis.cognitiveLoadMarkers}\n\n`;
+            
+            // NEW: Energy & Fatigue Assessment
+            resultText += `⚡ ENERGY & FATIGUE ASSESSMENT\n`;
+            resultText += `Current Energy Level: ${analysis.energyAnalysis.currentEnergyLevel}/100\n`;
+            resultText += `Energy Trend: ${analysis.energyAnalysis.energyTrend.direction.toUpperCase()} (${analysis.energyAnalysis.energyTrend.rate > 0 ? '+' : ''}${analysis.energyAnalysis.energyTrend.rate.toFixed(1)}/hr)\n`;
+            resultText += `Fatigue Score: ${analysis.energyAnalysis.fatigueIndicators.score}/100\n`;
+            resultText += `Cognitive Resources: ${analysis.energyAnalysis.cognitiveResources.overallCapacity}/100\n`;
+            if (analysis.energyAnalysis.predictions.nextLowEnergyPeriod) {
+                resultText += `Next Low Energy: ${analysis.energyAnalysis.predictions.nextLowEnergyPeriod}\n`;
+            }
+            resultText += `\n`;
+            
+            // NEW: Integrated Health Score
+            resultText += `💯 INTEGRATED HEALTH SCORES\n`;
+            resultText += `Overall Health: ${analysis.integratedHealthScore.overall}/100\n`;
+            resultText += `Cognitive: ${analysis.integratedHealthScore.cognitive}/100\n`;
+            resultText += `Energy: ${analysis.integratedHealthScore.energy}/100\n`;
+            resultText += `Fluency: ${analysis.integratedHealthScore.fluency}/100\n`;
+            resultText += `Stability: ${analysis.integratedHealthScore.stability}/100\n\n`;
+            
+            // NEW: Personal Baseline Deviation (if available)
+            if (analysis.deviationAnalysis && analysis.deviationAnalysis.isSignificant) {
+                resultText += `🔍 PERSONAL BASELINE DEVIATION\n`;
+                resultText += `Deviation Score: ${analysis.deviationAnalysis.deviationScore.toFixed(1)}/100\n`;
+                resultText += `Affected Metrics: ${analysis.deviationAnalysis.affectedMetrics.join(', ')}\n`;
+                resultText += `Assessment: ${analysis.deviationAnalysis.interpretation}\n\n`;
+            }
+            
+            // NEW: Environmental Activity Analysis
+            resultText += `🌍 ENVIRONMENTAL ACTIVITY PATTERNS\n`;
+            resultText += `Daily Coverage: ${analysis.environmentalAnalysis.dailyPatterns.coveragePercentage.toFixed(1)}% of day recorded\n`;
+            resultText += `Speaking Time: ${analysis.environmentalAnalysis.dailyPatterns.speakingHours.toFixed(1)} hours\n`;
+            resultText += `Listening Time: ${analysis.environmentalAnalysis.dailyPatterns.listeningHours.toFixed(1)} hours\n`;
+            resultText += `Silent Time: ${analysis.environmentalAnalysis.dailyPatterns.silentHours.toFixed(1)} hours\n`;
+            resultText += `Conversational Style: ${analysis.environmentalAnalysis.conversationDynamics.conversationalDominance.toUpperCase()}\n`;
+            resultText += `Speaking Ratio: ${(analysis.environmentalAnalysis.conversationDynamics.speakingRatio * 100).toFixed(1)}%\n`;
+            
+            if (analysis.environmentalAnalysis.sleepAnalysis.probableSleepPeriods.length > 0) {
+                resultText += `\n😴 SLEEP DETECTION\n`;
+                resultText += `Estimated Sleep: ${analysis.environmentalAnalysis.sleepAnalysis.estimatedSleepHours.toFixed(1)} hours\n`;
+                if (analysis.environmentalAnalysis.sleepAnalysis.typicalBedtime) {
+                    resultText += `Typical Bedtime: ${analysis.environmentalAnalysis.sleepAnalysis.typicalBedtime}\n`;
+                    resultText += `Typical Wake Time: ${analysis.environmentalAnalysis.sleepAnalysis.typicalWakeTime}\n`;
+                }
+                resultText += `Sleep Consistency: ${(analysis.environmentalAnalysis.sleepAnalysis.sleepConsistency * 100).toFixed(0)}%\n`;
+            }
+            
+            resultText += `\n👥 SOCIAL PATTERNS\n`;
+            resultText += `Social Intensity: ${analysis.environmentalAnalysis.socialPatterns.socialIntensityScore}%\n`;
+            resultText += `Peak Social Hours: ${analysis.environmentalAnalysis.socialPatterns.peakSocialHours.map(h => `${h}:00`).join(', ')}\n`;
+            resultText += `Isolation Periods: ${analysis.environmentalAnalysis.socialPatterns.isolationPeriods} (2+ hour silent periods)\n`;
+            resultText += `\n`;
             
             // Statistical Trend Analysis
             if (args.include_trends) {
@@ -887,6 +969,21 @@ const speechBiomarkerHandler = async (args: any, _extra: RequestHandlerExtra): P
             // Clinical Interpretation
             resultText += `🏥 CLINICAL INTERPRETATION\n`;
             
+            // Add new clinical insights
+            if (analysis.clinicalInsights.primaryConcerns.length > 0) {
+                resultText += `⚠️  Primary Concerns:\n`;
+                analysis.clinicalInsights.primaryConcerns.forEach(concern => {
+                    resultText += `   • ${concern}\n`;
+                });
+            }
+            
+            if (analysis.clinicalInsights.positiveIndicators.length > 0) {
+                resultText += `✅ Positive Indicators:\n`;
+                analysis.clinicalInsights.positiveIndicators.forEach(indicator => {
+                    resultText += `   • ${indicator}\n`;
+                });
+            }
+            
             // Reliability assessment
             if (biomarkers.reliability === "high") {
                 resultText += `✅ Results are statistically reliable for health monitoring\n`;
@@ -920,14 +1017,38 @@ const speechBiomarkerHandler = async (args: any, _extra: RequestHandlerExtra): P
                 resultText += `📊 No significant trend detected - patterns appear stable\n`;
             }
             
+            // NEW: Recommendations
+            if (analysis.clinicalInsights.recommendations.length > 0) {
+                resultText += `\n💡 RECOMMENDATIONS\n`;
+                analysis.clinicalInsights.recommendations.forEach((rec, i) => {
+                    resultText += `${i + 1}. ${rec}\n`;
+                });
+            }
+            
+            // NEW: Predictions
+            if (analysis.predictions.riskFactors.length > 0) {
+                resultText += `\n🔮 PREDICTIVE INSIGHTS\n`;
+                analysis.predictions.riskFactors.forEach(risk => {
+                    const percentage = (risk.probability * 100).toFixed(0);
+                    resultText += `• ${risk.factor}: ${percentage}% probability\n`;
+                });
+                if (analysis.predictions.nextLowEnergyPeriod) {
+                    resultText += `• Next predicted low energy: ${analysis.predictions.nextLowEnergyPeriod}\n`;
+                }
+            }
+            
             resultText += `\n📚 EVIDENCE BASE\n`;
             resultText += `• Normal speech rate: 120-180 WPM (Tauroza & Allison, 1990)\n`;
             resultText += `• Speech biomarkers: Early indicators for cognitive health\n`;
+            resultText += `• Rhythm entropy: Measure of speech pattern regularity\n`;
+            resultText += `• Disfluency analysis: Cognitive load and speech planning indicators\n`;
+            resultText += `• Energy patterns: Circadian rhythms and fatigue detection\n`;
             resultText += `• Statistical significance: p < 0.05 indicates reliable change\n`;
             resultText += `• Confidence intervals: 95% CI contains true population value\n`;
             resultText += `• For detailed methodology, see: docs/SPEECH_BIOMARKERS.md\n\n`;
             
-            resultText += `Total analysis time: ${(biomarkers.totalAnalysisTime / 60000).toFixed(1)} minutes of speech`;
+            resultText += `Total analysis time: ${(biomarkers.totalAnalysisTime / 60000).toFixed(1)} minutes of speech\n`;
+            resultText += `Analysis confidence: ${(analysis.metadata.confidence * 100).toFixed(0)}%`;
             
             return { content: [{ type: "text", text: resultText }] };
             
@@ -939,19 +1060,19 @@ const speechBiomarkerHandler = async (args: any, _extra: RequestHandlerExtra): P
 
 // Register the main tool and aliases
 server.tool("limitless_analyze_speech_biomarkers",
-    "Analyze speech patterns with rigorous statistical methodology for health monitoring and cognitive assessment. Provides confidence intervals, p-values, and evidence-based clinical interpretation.",
+    "Comprehensive speech analysis with advanced biomarkers: rhythm entropy, disfluency detection, energy scoring, and personal baseline tracking. Provides clinical-grade health monitoring with confidence intervals, p-values, and predictive insights.",
     SpeechBiomarkerArgsSchema,
     speechBiomarkerHandler
 );
 
 server.tool("speechclock",
-    "Get your 'speech clock' - comprehensive speech biomarker analysis showing cognitive patterns, speaking rates, and health indicators over time. Perfect for monitoring speech health trends.",
+    "Get your 'speech clock' - advanced health monitoring through speech patterns. Tracks rhythm consistency, cognitive load, energy levels, and fatigue. Provides personalized baseline comparisons and predictive insights for optimal performance times.",
     SpeechBiomarkerArgsSchema,
     speechBiomarkerHandler
 );
 
 server.tool("speechage",
-    "Analyze your 'speech age' - statistical assessment of speech patterns compared to population norms. Shows how your speech biomarkers compare to typical age groups and cognitive baselines.",
+    "Analyze your 'speech age' - comprehensive assessment of speech health including fluency ratings, cognitive resources, and energy patterns. Compares your biomarkers to population norms and tracks deviations from your personal baseline.",
     SpeechBiomarkerArgsSchema,
     speechBiomarkerHandler
 );

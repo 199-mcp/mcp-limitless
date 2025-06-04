@@ -1,7 +1,7 @@
 {
   "name": "199bio-mcp-limitless-server",
-  "version": "0.4.0",
-  "description": "Revolutionary MCP Server with clinical-grade speech biomarker analysis, AI-powered Limitless API features, statistical health monitoring, and comprehensive conversation analytics",
+  "version": "0.5.0",
+  "description": "Next-generation MCP Server with advanced speech rhythm analysis, disfluency detection, energy/fatigue assessment, personal baseline tracking, and comprehensive health scoring through speech patterns",
   "license": "MIT",
   "author": "Boris Djordjevic <boris@199longevity.com> (199 Longevity), Ryan Boyle (Original)",
   "type": "module",

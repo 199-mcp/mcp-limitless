@@ -32,6 +32,24 @@ export interface DataQualityMetrics {
 export class StatisticalUtils {
     
     /**
+     * Calculate mean of an array of numbers
+     */
+    static mean(values: number[]): number {
+        if (values.length === 0) return 0;
+        return values.reduce((sum, val) => sum + val, 0) / values.length;
+    }
+    
+    /**
+     * Calculate standard deviation
+     */
+    static standardDeviation(values: number[]): number {
+        if (values.length < 2) return 0;
+        const avg = this.mean(values);
+        const variance = values.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / (values.length - 1);
+        return Math.sqrt(variance);
+    }
+    
+    /**
      * Calculate confidence interval for a mean
      */
     static calculateConfidenceInterval(
