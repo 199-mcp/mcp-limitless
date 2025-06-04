@@ -1,5 +1,5 @@
-# Lean Limitless MCP Server (v0.7.0) 🎯
-![Version](https://img.shields.io/badge/version-0.7.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
+# Lean Limitless MCP Server (v0.7.1) 🎯
+![Version](https://img.shields.io/badge/version-0.7.1-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
 
 **Less code, more reliability.** A lean MCP server for Limitless Pendant that focuses on doing a few things extremely well:
 
@@ -37,7 +37,7 @@ v0.7.0 removes 60% of the codebase to focus on reliability over features.
 
 ## 🆚 Original vs Enhanced Comparison
 
-| Feature | Original v0.1.0 | Enhanced v0.5.0 | Improvement |
+| Feature | Original v0.1.0 | Lean v0.7.0 | Improvement |
 |---------|----------------|------------------|-------------|
 | **Time Queries** | Manual date calculation required | Natural language: "today", "past week", "last Monday" | 🎯 **10x easier** |
 | **Meeting Detection** | Manual log analysis | Automatic detection with participants, topics, action items | 🤖 **Fully automated** |
@@ -118,11 +118,11 @@ You can run this intelligent MCP server directly using npx without any installat
 }
 ```
 
-This automatically downloads v0.5.1 with advanced health monitoring features when your MCP client starts.
+This automatically downloads v0.7.1 with the lean, reliable Speech Vitality Index when your MCP client starts.
 
 ## 🎯 Perfect for Claude AI Users
 
-The v0.5.0 upgrade transforms your Claude conversations with comprehensive health insights:
+The v0.7.0 lean focus transforms your Claude conversations with reliable, trustworthy insights:
 
 **Before:** "Let me check your logs... *reads through everything* ... based on my analysis..."  
 **After:** "What action items came from today's meetings?" → *Instant intelligent response*
@@ -304,7 +304,7 @@ If your `mcpServers` object already contains other servers (like `"notion": {...
 4.  **`limitless_list_recent_lifelogs`**: Lists the most recent Pendant recordings.
 5.  **`limitless_search_lifelogs`**: Searches title/content of *recent* Pendant recordings (limited scope).
 
-## 💬 Real-World Examples with v0.5.0 Features
+## 💬 Real-World Examples with v0.7.0 Lean Features
 
 ### 🧠 Speech Vitality Examples
 
@@ -351,7 +351,7 @@ Next Step: 2 more conversations needed for reliable trends
 - 📊 Clear trends without statistical gymnastics
 - 💡 Actionable next steps, not confusing metrics
 
-## 📅 Supported Natural Time Expressions (v0.5.0)
+## 📅 Supported Natural Time Expressions
 
 The enhanced time parser now supports over 50 natural language expressions:
 
@@ -415,7 +415,7 @@ This server uses `stdio` and is meant to be launched by an MCP-compatible client
 
 ## 🔬 Technical Architecture
 
-**v0.5.0 Advanced Features:**
+**v0.7.0 Lean Features:**
 - **Natural Language Processing:** Robust time expression parser with timezone support
 - **Machine Learning Patterns:** Intelligent meeting detection using speaker analysis
 - **Context-Aware Search:** Full-text search with relevance scoring and context inclusion
@@ -438,16 +438,13 @@ This server uses `stdio` and is meant to be launched by an MCP-compatible client
 - ✅ Comprehensive daily summaries with productivity insights
 - ✅ Speaker analytics with conversation patterns
 - ✅ Smart action item extraction with priority inference
-- ✅ Speech rhythm analysis with entropy calculation
-- ✅ Disfluency detection (fillers, repairs, hesitations)
-- ✅ Energy and fatigue assessment with predictions
-- ✅ Personal baseline tracking and deviation alerts
-- ✅ Environmental activity analysis and sleep detection
-- ✅ Integrated health scoring (0-100 scales)
+- ✅ Speech Vitality Index - single reliable health score (0-100)
+- ✅ Quality-first analysis - only reliable conversations analyzed
+- ✅ Honest reporting - "insufficient data" when appropriate
 - ✅ Production-quality TypeScript architecture
 - ✅ Robust error handling and performance optimization
 
-### 🔮 Planned Features (v0.5.0+)
+### 🔮 Future Considerations (When Core is Perfect)
 - 🔄 **Intelligent Caching Layer** - Smart caching for repeated queries
 - 🧪 **Unit Test Suite** - Comprehensive testing for all features
 - 📈 **Advanced Analytics** - Weekly/monthly productivity trends

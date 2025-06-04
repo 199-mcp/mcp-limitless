@@ -154,7 +154,7 @@ const SpeechBiomarkerArgsSchema = {
 
 const server = new McpServer({
     name: "LimitlessMCP",
-    version: "0.4.0",
+    version: "0.7.1",
 }, {
     capabilities: {
         tools: {}
@@ -242,21 +242,13 @@ Available Tools:
     - **USE FOR:** "What were the exact technical specifications mentioned?", "Give me all the specific numbers and figures discussed"
     - Args: time_expression (opt, default 'today'), timezone (opt), focus_area (opt, default 'all'), preserve_precision (opt, default true)
 
-14. **limitless_analyze_speech_biomarkers** (aliases: **speechclock**, **speechage**): Rigorous statistical analysis of speech patterns for health monitoring and cognitive assessment.
-    - **SCIENTIFIC METHODOLOGY:** Uses proper statistical analysis with confidence intervals, p-values, and trend detection
-    - **BIOMARKER EXTRACTION:** Speech rate, pause patterns, vocabulary complexity with clinical interpretation
-    - **POPULATION COMPARISON:** Percentile rankings vs. normal adult speech patterns (120-180 WPM baseline)
-    - **DATA QUALITY ASSESSMENT:** Validates data reliability and provides sample size recommendations
-    - **TREND ANALYSIS:** Statistical significance testing for speech pattern changes over time
-    - **CLINICAL CONTEXT:** Evidence-based interpretation following speech biomarker research literature
-    - **TIME RANGE SUPPORT:** "today", "this week", "last month", "past 3 months", "Q1 2024", custom ranges
-    - **USE FOR:** "What's my speechclock this week?", "Show my speechage", "Analyze speech patterns last month"
-    - Args: time_expression (opt, defaults to available data), timezone (opt), include_trends (opt, default true), include_percentiles (opt, default true)
-    - **NOTE:** Requires minimum 30 segments for reliable analysis. Results include confidence intervals and statistical significance testing.
-
-**SPEECHCLOCK & SPEECHAGE ALIASES:**
-- **speechclock**: Focus on temporal patterns and trends - "What's my speechclock today?"
-- **speechage**: Focus on cognitive age assessment vs. population - "What's my speechage compared to my age group?"
+14. **speechclock** / **speechage**: Speech Vitality Index - single reliable health score from quality conversations.
+    - **SIMPLIFIED APPROACH:** One trustworthy score (0-100) instead of complex statistics
+    - **QUALITY FIRST:** Only analyzes 5+ minute conversations with clear audio
+    - **HONEST REPORTING:** Shows "insufficient data" instead of questionable analysis
+    - **CLEAR TRENDS:** "Improving", "Stable", "Declining", or "Insufficient Data"
+    - **USE FOR:** "What's my speechclock?", "Show my speechage"
+    - Args: time_expression (opt, default 'past 7 days'), timezone (opt), detailed (opt, show components)
 `
 });
 
