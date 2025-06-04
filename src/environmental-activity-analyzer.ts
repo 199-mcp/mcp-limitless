@@ -97,7 +97,7 @@ export class EnvironmentalActivityAnalyzer {
      * Analyze environmental and activity patterns from lifelogs
      */
     static analyzeActivityPatterns(lifelogs: Lifelog[]): EnvironmentalActivityMetrics {
-        console.log(`🌍 Analyzing environmental activity patterns from ${lifelogs.length} lifelogs...`);
+        // Analyzing environmental activity patterns
         
         if (lifelogs.length === 0) {
             return this.createEmptyMetrics();

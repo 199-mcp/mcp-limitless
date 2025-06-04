@@ -75,14 +75,67 @@ export interface BaselineProfile {
 export class ImprovedSpeechBiomarkerAnalyzer {
     
     /**
+     * Calculate effective speech rate excluding long pauses
+     */
+    private static calculateEffectiveSpeechRate(segments: ImprovedSpeechSegment[]): number[] {
+        const effectiveRates: number[] = [];
+        const pauseThresholdMs = 2000; // 2 seconds - pauses longer than this are excluded
+        
+        // Group segments by lifelog for proper pause calculation
+        const segmentsByLifelog = new Map<string, ImprovedSpeechSegment[]>();
+        segments.forEach(segment => {
+            if (!segmentsByLifelog.has(segment.lifelogId)) {
+                segmentsByLifelog.set(segment.lifelogId, []);
+            }
+            segmentsByLifelog.get(segment.lifelogId)!.push(segment);
+        });
+        
+        // Calculate effective speech rate for each lifelog
+        for (const [lifelogId, lifelogSegments] of segmentsByLifelog) {
+            // Sort by start time
+            lifelogSegments.sort((a, b) => a.startOffsetMs - b.startOffsetMs);
+            
+            let totalWords = 0;
+            let totalSpeakingTimeMs = 0;
+            
+            for (let i = 0; i < lifelogSegments.length; i++) {
+                const segment = lifelogSegments[i];
+                totalWords += segment.wordCount;
+                totalSpeakingTimeMs += segment.durationMs;
+                
+                // Add pause time if it's short enough to be considered part of natural speech
+                if (i < lifelogSegments.length - 1) {
+                    const nextSegment = lifelogSegments[i + 1];
+                    const pauseMs = nextSegment.startOffsetMs - segment.endOffsetMs;
+                    
+                    // Only count short pauses as part of speech time
+                    if (pauseMs > 0 && pauseMs < pauseThresholdMs) {
+                        totalSpeakingTimeMs += pauseMs;
+                    }
+                }
+            }
+            
+            // Calculate effective WPM for this lifelog
+            if (totalSpeakingTimeMs > 0 && totalWords > 5) { // Minimum threshold
+                const effectiveWPM = (totalWords / totalSpeakingTimeMs) * 60000;
+                if (effectiveWPM >= 30 && effectiveWPM <= 400) { // Reasonable range
+                    effectiveRates.push(effectiveWPM);
+                }
+            }
+        }
+        
+        return effectiveRates;
+    }
+    
+    /**
      * Analyze speech patterns with proper statistical methodology
      */
     static analyzeSpeechPatternsWithStats(lifelogs: Lifelog[]): StatisticalBiomarkers {
-        console.log(`🔬 Starting rigorous statistical analysis of ${lifelogs.length} lifelogs...`);
+        // Starting rigorous statistical analysis
         
         // Extract and validate segments
         const allSegments = this.extractAndValidateSegments(lifelogs);
-        console.log(`Found ${allSegments.length} total segments, ${allSegments.filter(s => s.isValid).length} valid`);
+        // Extracted segments for analysis
         
         if (allSegments.filter(s => s.isValid).length === 0) {
             return this.createEmptyStatisticalResults();
@@ -95,7 +148,8 @@ export class ImprovedSpeechBiomarkerAnalyzer {
         const dataQuality = this.assessDataQuality(allSegments, validSegments);
         
         // Calculate statistical metrics with confidence intervals
-        const speechRateValues = validSegments.map(s => s.wordsPerMinute);
+        // Use effective speech rate that excludes long pauses
+        const speechRateValues = this.calculateEffectiveSpeechRate(validSegments);
         const pauseValues = this.calculatePauseDurations(validSegments);
         const vocabularyValues = this.calculateVocabularyMetrics(validSegments);
         const wordsPerTurnValues = validSegments.map(s => s.wordCount);
@@ -161,6 +215,7 @@ export class ImprovedSpeechBiomarkerAnalyzer {
                     const content = node.content.trim();
                     const wordCount = this.countWords(content);
                     const durationMs = node.endOffsetMs - node.startOffsetMs;
+                    // Calculate WPM only for the actual speaking duration
                     const wordsPerMinute = durationMs > 0 ? (wordCount / durationMs) * 60000 : 0;
                     
                     // Quality validation

@@ -76,7 +76,6 @@ export class ComprehensiveSpeechAnalyzer {
         const startTime = Date.now();
         
         // 1. Core statistical biomarkers
-        console.log("🔬 Analyzing core speech biomarkers...");
         const coreMetrics = ImprovedSpeechBiomarkerAnalyzer.analyzeSpeechPatternsWithStats(lifelogs);
         
         // Extract validated segments for other analyzers
@@ -88,15 +87,12 @@ export class ComprehensiveSpeechAnalyzer {
         }
         
         // 2. Rhythm analysis
-        console.log("🎵 Analyzing speech rhythm patterns...");
         const rhythmAnalysis = SpeechRhythmAnalyzer.analyzeRhythm(validSegments);
         
         // 3. Disfluency detection
-        console.log("🗣️ Detecting speech disfluencies...");
         const disfluencyAnalysis = DisfluencyDetector.analyzeDisfluencies(validSegments);
         
         // 4. Energy and fatigue analysis
-        console.log("⚡ Assessing energy and fatigue levels...");
         const energyAnalysis = EnergyFatigueAnalyzer.analyzeEnergyPatterns(
             validSegments,
             rhythmAnalysis,
@@ -105,7 +101,6 @@ export class ComprehensiveSpeechAnalyzer {
         );
         
         // 5. Environmental activity analysis
-        console.log("🌍 Analyzing environmental activity patterns...");
         const environmentalAnalysis = EnvironmentalActivityAnalyzer.analyzeActivityPatterns(lifelogs);
         
         // 6. Personal baseline (if userId provided)
