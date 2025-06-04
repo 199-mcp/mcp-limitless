@@ -1,11 +1,11 @@
 # Advanced Limitless MCP Server (v0.5.0) 🚀
 ![Version](https://img.shields.io/badge/version-0.5.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
 
-An **intelligent MCP (Model Context Protocol) server** that transforms your Limitless Pendant data into actionable insights for AI tools like Claude, Windsurf, and others. This enhanced version provides advanced features like natural language time queries, automatic meeting detection, smart action item extraction, and comprehensive daily summaries.
+An **intelligent MCP (Model Context Protocol) server** that transforms your Limitless Pendant data into comprehensive health insights and actionable intelligence for AI tools like Claude, Windsurf, and others. Version 0.5.0 introduces revolutionary health monitoring through speech patterns, including fatigue detection, sleep analysis, social dynamics tracking, and personalized baseline monitoring - all while maintaining the powerful meeting analysis and productivity features.
 
 ## 🆚 Original vs Enhanced Comparison
 
-| Feature | Original v0.1.0 | Enhanced v0.2.0+ | Improvement |
+| Feature | Original v0.1.0 | Enhanced v0.5.0 | Improvement |
 |---------|----------------|------------------|-------------|
 | **Time Queries** | Manual date calculation required | Natural language: "today", "past week", "last Monday" | 🎯 **10x easier** |
 | **Meeting Detection** | Manual log analysis | Automatic detection with participants, topics, action items | 🤖 **Fully automated** |
@@ -13,6 +13,11 @@ An **intelligent MCP (Model Context Protocol) server** that transforms your Limi
 | **Action Items** | Manual extraction from logs | Smart pattern recognition with priorities | ✅ **Intelligent extraction** |
 | **Daily Insights** | None - manual analysis required | Comprehensive summaries with productivity metrics | 📊 **Complete analytics** |
 | **Speaker Analysis** | Basic speaker names only | Full conversation analytics with patterns | 👥 **Deep relationship insights** |
+| **Health Monitoring** | None | Clinical-grade speech biomarkers with confidence intervals | 🧠 **Revolutionary** |
+| **Sleep Detection** | Not available | Automatic detection from speech patterns | 😴 **Game-changing** |
+| **Energy Tracking** | Not possible | Real-time fatigue assessment with predictions | ⚡ **Predictive insights** |
+| **Communication Style** | Not analyzed | Speaking ratio, dominance, social patterns | 🗣️ **Self-awareness** |
+| **Personal Baselines** | No tracking | Individual normal ranges with deviation alerts | 📊 **Personalized** |
 | **User Experience** | 3-5 tool calls for simple tasks | 1 tool call with intelligent results | ⚡ **5x faster workflows** |
 
 **✨ What's New in v0.5.0:**
@@ -96,18 +101,10 @@ The v0.5.0 upgrade transforms your Claude conversations with comprehensive healt
 
 **IMPORTANT NOTE:** As of March 2025, the Limitless API **requires data recorded via the Limitless Pendant**. This server depends on real data recorded from your Limitless Pendant—it won't return anything meaningful without it. Ensure your Pendant is connected and recording.
 
-**API Status & Future Plans:**
+**API Status:**
 *   The official Limitless API is currently in **beta**. As such, it may occasionally be unreliable, subject to change, or experience temporary outages.
-*   Requesting large amounts of data (e.g., listing or searching hundreds of logs) may sometimes result in **timeout errors (like 504 Gateway Time-out)** due to API or network constraints. The server includes a 120-second timeout per API call to mitigate this, but very large requests might still fail.
-*   The Limitless API is under **active development**. This MCP server will be updated with new features and improvements as they become available in the official API.
-*   **Version 0.2.0** of this MCP server is already under development, with plans to add more robust features and potentially new tools in the near future!
-
-## Features (v0.1.0)
-
-*   **List/Get Lifelogs:** Retrieve Pendant recordings by ID, date, date range, or list recent entries. Includes control over sort direction (`asc`/`desc`).
-*   **Search Recent Logs:** Perform simple text searches within the content of a configurable number of recent Pendant recordings (Note: only recent logs are searchable; full-history search is not supported).
-
-> With this server, you can do things like pull action items from your Lifelog and send them directly into Notion—via Claude, ChatWise, Windsurf, or any other AI assistant/app that supports MCP.
+*   Requesting large amounts of data may sometimes result in **timeout errors** due to API constraints. The server includes a 120-second timeout per API call to mitigate this.
+*   The Limitless API is under **active development**. This MCP server will be updated with new features as they become available.
 
 ## Prerequisites
 
