@@ -1,9 +1,11 @@
 # Advanced Speech Biomarkers: Enhanced Health Monitoring
 
-**Version:** 2.0  
-**Date:** June 4, 2025  
+**Version:** 2.1  
+**Date:** January 2025  
 **Authors:** Boris Djordjevic (199 Longevity)  
-**Status:** Production-ready with clinical validation pending
+**Status:** Legacy Documentation
+
+> **Note:** This document describes the v0.5 advanced biomarker features which have been deprecated in favor of the simplified Speech Vitality Index (SVI) in v0.6.0+. See [SPEECH_VITALITY_INDEX.md](./SPEECH_VITALITY_INDEX.md) for the current approach. The complex system described here has been replaced due to reliability concerns with partial, passive recording data.
 
 ## Table of Contents
 

@@ -1,9 +1,11 @@
 # Speech Biomarker Analysis: Methodology and Clinical Validation
 
-**Version:** 1.0  
-**Date:** June 4, 2025  
+**Version:** 1.1  
+**Date:** January 2025  
 **Authors:** Boris Djordjevic (199 Longevity), Enhanced implementation based on foundation by Ryan Boyle (ipvr9)  
-**Status:** Ready for peer review  
+**Status:** Legacy Documentation  
+
+> **Note:** This document describes the v0.4-0.5 complex biomarker system. For the current simplified approach, see [SPEECH_VITALITY_INDEX.md](./SPEECH_VITALITY_INDEX.md). The complex system has been replaced with the Speech Vitality Index (SVI) which provides a single, reliable score from quality conversations only.  
 
 ## Executive Summary
 
@@ -78,9 +80,21 @@ Quality Score = (Valid Segments / Total Segments) × (1 - Outlier Rate)
 
 #### 2.3.1 Speech Rate Analysis
 **Primary Metric:** Words per minute (WPM)
+
+**Standard Calculation:**
 ```
 WPM = (Word Count / Duration in milliseconds) × 60,000
 ```
+
+**Effective Speech Rate Calculation (v0.5.1+):**
+To better reflect natural conversational patterns, the system now calculates an effective speech rate that excludes long pauses:
+```
+1. Group segments by conversation/lifelog
+2. Calculate speaking time including only pauses < 2 seconds
+3. Effective WPM = (Total Words / Effective Speaking Time) × 60,000
+```
+
+This approach provides a more accurate measure of actual speaking rate by excluding extended pauses that occur naturally in monologues or when the speaker is thinking.
 
 **Population Norms:** 120-180 WPM (Tauroza & Allison, 1990)
 
@@ -373,6 +387,7 @@ TTR = |{unique words}| / |{total words}|
 
 **Document Version Control:**
 - v1.0 (June 4, 2025): Initial methodology documentation
+- v1.1 (June 4, 2025): Added effective speech rate calculation methodology (excludes long pauses >2s)
 - Ready for peer review and clinical validation
 
 **Contact Information:**

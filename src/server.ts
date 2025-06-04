@@ -33,6 +33,10 @@ import {
     ComprehensiveSpeechAnalyzer,
     ComprehensiveSpeechAnalysis
 } from "./comprehensive-speech-analysis.js";
+import {
+    SpeechVitalityAnalyzer,
+    SimplifiedAnalysis
+} from "./speech-vitality-index.js";
 
 // --- Constants ---
 const MAX_LIFELOG_LIMIT = 100;
@@ -776,7 +780,75 @@ server.tool("limitless_get_detailed_analysis",
     }
 );
 
-// Speech Biomarker Analysis Tool (with aliases)
+// Simplified Speech Vitality Handler
+const speechVitalityHandler = async (args: any, _extra: RequestHandlerExtra): Promise<CallToolResult> => {
+    try {
+        const timeExpression = args.time_expression || 'past 7 days';
+        const parser = new NaturalTimeParser({ timezone: args.timezone });
+        const timeRange = parser.parseTimeExpression(timeExpression);
+        
+        const apiOptions: LifelogParams = {
+            start: timeRange.start,
+            end: timeRange.end,
+            timezone: timeRange.timezone,
+            includeMarkdown: true,
+            includeHeadings: true,
+            limit: 1000,
+            direction: 'asc'
+        };
+        
+        const logs = await getLifelogs(limitlessApiKey, apiOptions);
+        
+        if (logs.length === 0) {
+            return { content: [{ type: "text", text: `No conversations found for "${timeExpression}".` }] };
+        }
+        
+        // Analyze using simplified SVI
+        const analysis = SpeechVitalityAnalyzer.analyze(logs);
+        
+        // Build simple, clear response
+        let resultText = "";
+        
+        if (analysis.currentScore) {
+            // Main score display
+            resultText += `**Speech Vitality: ${analysis.currentScore.svi}/100**\n`;
+            resultText += `Trend: ${analysis.trend}${analysis.trendConfidence > 50 ? ` (${analysis.trendConfidence}% confidence)` : ''}\n\n`;
+            
+            // Component breakdown (only if requested)
+            if (args.detailed) {
+                resultText += `**Components:**\n`;
+                resultText += `• Fluency: ${analysis.currentScore.fluencyScore}/100\n`;
+                resultText += `• Energy: ${analysis.currentScore.energyScore}/100\n`;
+                resultText += `• Consistency: ${analysis.currentScore.consistencyScore}/100\n\n`;
+            }
+            
+            // Action required
+            resultText += `**Next Step:** ${analysis.nextActionRequired}\n\n`;
+            
+            // Recent history (compact)
+            if (analysis.historicalScores.length > 0) {
+                resultText += `**Recent Scores:**\n`;
+                analysis.historicalScores.slice(-5).forEach(score => {
+                    resultText += `• ${score.date}: ${score.score} (${score.context})\n`;
+                });
+            }
+        } else {
+            // No data yet
+            resultText = `**Speech Vitality: --/100**\n\n`;
+            resultText += `${analysis.nextActionRequired}\n\n`;
+            resultText += `The Speech Vitality Index requires quality conversations to analyze. `;
+            resultText += `Once you have a 5+ minute conversation, your score will appear here.`;
+        }
+        
+        return { content: [{ type: "text", text: resultText }] };
+        
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return { content: [{ type: "text", text: `Error analyzing speech vitality: ${errorMessage}` }], isError: true };
+    }
+};
+
+// Legacy Speech Biomarker Analysis Tool (keeping for compatibility)
 const speechBiomarkerHandler = async (args: any, _extra: RequestHandlerExtra): Promise<CallToolResult> => {
         try {
             const timeExpression = args.time_expression || 'available data';
@@ -1059,20 +1131,24 @@ const speechBiomarkerHandler = async (args: any, _extra: RequestHandlerExtra): P
     };
 
 // Register the main tool and aliases
-server.tool("limitless_analyze_speech_biomarkers",
-    "Comprehensive speech analysis with advanced biomarkers: rhythm entropy, disfluency detection, energy scoring, and personal baseline tracking. Provides clinical-grade health monitoring with confidence intervals, p-values, and predictive insights.",
-    SpeechBiomarkerArgsSchema,
-    speechBiomarkerHandler
-);
+// Main biomarker tool removed - use speechclock or speechage instead
 
+// Simplified Speech Vitality Tools
 server.tool("speechclock",
-    "Get your 'speech clock' - advanced health monitoring through speech patterns. Tracks rhythm consistency, cognitive load, energy levels, and fatigue. Provides personalized baseline comparisons and predictive insights for optimal performance times.",
+    "Your Speech Vitality Score - a simple, reliable measure of speech health. Tracks fluency, energy, and consistency from quality conversations only. Shows your score (0-100) and trend.",
     SpeechBiomarkerArgsSchema,
-    speechBiomarkerHandler
+    speechVitalityHandler
 );
 
 server.tool("speechage",
-    "Analyze your 'speech age' - comprehensive assessment of speech health including fluency ratings, cognitive resources, and energy patterns. Compares your biomarkers to population norms and tracks deviations from your personal baseline.",
+    "Your Speech Vitality Score - a simple, reliable measure of speech health. Tracks fluency, energy, and consistency from quality conversations only. Shows your score (0-100) and trend.",
+    SpeechBiomarkerArgsSchema,
+    speechVitalityHandler
+);
+
+// Legacy biomarker tool (hidden from main list but still accessible)
+server.tool("limitless_analyze_speech_biomarkers_legacy",
+    "[LEGACY] Complex statistical analysis of speech patterns with 20+ biomarkers. Use speechclock or speechage for the simplified, more reliable Speech Vitality Score.",
     SpeechBiomarkerArgsSchema,
     speechBiomarkerHandler
 );

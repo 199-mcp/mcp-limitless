@@ -1,7 +1,32 @@
-# Advanced Limitless MCP Server (v0.5.0) 🚀
-![Version](https://img.shields.io/badge/version-0.5.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
+# Advanced Limitless MCP Server (v0.6.0) 🚀
+![Version](https://img.shields.io/badge/version-0.6.0-blue) ![License](https://img.shields.io/badge/license-MIT-green) ![NPM](https://img.shields.io/npm/v/199bio-mcp-limitless-server)
 
-An **intelligent MCP (Model Context Protocol) server** that transforms your Limitless Pendant data into comprehensive health insights and actionable intelligence for AI tools like Claude, Windsurf, and others. Version 0.5.0 introduces revolutionary health monitoring through speech patterns, including fatigue detection, sleep analysis, social dynamics tracking, and personalized baseline monitoring - all while maintaining the powerful meeting analysis and productivity features.
+An **intelligent MCP (Model Context Protocol) server** that transforms your Limitless Pendant data into actionable intelligence for AI tools like Claude, Windsurf, and others. Version 0.6.0 introduces the revolutionary **Speech Vitality Index (SVI)** - a single, reliable health score from quality conversations, replacing complex biomarkers with trustworthy simplicity.
+
+## 📑 Table of Contents
+
+- [🆚 Original vs Enhanced Comparison](#-original-vs-enhanced-comparison)
+- [🚀 Quick Start](#quick-start-with-npx-no-installation-required)
+- [🎯 Perfect for Claude AI Users](#-perfect-for-claude-ai-users)
+- [📋 Prerequisites](#prerequisites)
+- [🔧 Installation Options](#installation-options)
+- [⚙️ Configuration](#configuration-client-side)
+- [🏃 Running the Server](#running-the-server)
+- [🛠️ Available MCP Tools](#️-available-mcp-tools-v050)
+  - [🎯 Smart & Intuitive Tools](#-smart--intuitive-new)
+  - [📚 Core Foundation Tools](#-core-foundation-tools)
+- [💬 Real-World Examples](#-real-world-examples-with-v050-features)
+  - [🧠 Health Monitoring Examples](#-health-monitoring-examples)
+  - [🗣️ Communication Style Analysis](#️-communication-style-analysis)
+  - [⚡ Performance Optimization](#-performance-optimization)
+  - [📊 Trend Analysis](#-trend-analysis)
+  - [🏥 Clinical-Grade Analysis](#-clinical-grade-analysis)
+- [📅 Supported Natural Time Expressions](#-supported-natural-time-expressions-v050)
+- [📝 Notes & Limitations](#notes--limitations)
+- [🔬 Technical Architecture](#-technical-architecture)
+- [🚧 Roadmap & Future Enhancements](#-roadmap--future-enhancements)
+- [🤝 Contributing](#-contributing)
+- [📚 Peer-Reviewed Documentation](#-peer-reviewed-documentation)
 
 ## 🆚 Original vs Enhanced Comparison
 
@@ -13,26 +38,27 @@ An **intelligent MCP (Model Context Protocol) server** that transforms your Limi
 | **Action Items** | Manual extraction from logs | Smart pattern recognition with priorities | ✅ **Intelligent extraction** |
 | **Daily Insights** | None - manual analysis required | Comprehensive summaries with productivity metrics | 📊 **Complete analytics** |
 | **Speaker Analysis** | Basic speaker names only | Full conversation analytics with patterns | 👥 **Deep relationship insights** |
-| **Health Monitoring** | None | Clinical-grade speech biomarkers with confidence intervals | 🧠 **Revolutionary** |
-| **Sleep Detection** | Not available | Automatic detection from speech patterns | 😴 **Game-changing** |
-| **Energy Tracking** | Not possible | Real-time fatigue assessment with predictions | ⚡ **Predictive insights** |
-| **Communication Style** | Not analyzed | Speaking ratio, dominance, social patterns | 🗣️ **Self-awareness** |
-| **Personal Baselines** | No tracking | Individual normal ranges with deviation alerts | 📊 **Personalized** |
+| **Health Monitoring** | None | Speech Vitality Index (0-100) from quality conversations | 🧠 **Simple & Reliable** |
+| **Data Quality** | All data analyzed | Only quality conversations (5+ min) analyzed | ✅ **100% Reliable** |
+| **Complexity** | Not available | One clear score with trend analysis | 📊 **Actually Usable** |
+| **Honesty** | N/A | "Insufficient data" when appropriate | 🎯 **Trustworthy** |
 | **User Experience** | 3-5 tool calls for simple tasks | 1 tool call with intelligent results | ⚡ **5x faster workflows** |
 
-**✨ What's New in v0.5.0:**
-- 🎵 **Speech Rhythm Analysis** - Entropy calculation, burst-pause ratio, speech momentum tracking
-- 🗣️ **Disfluency Detection** - Filler words, self-corrections, speech planning difficulty assessment
-- ⚡ **Energy & Fatigue Scoring** - Real-time energy levels, fatigue indicators, circadian alignment
-- 📊 **Personal Baseline Tracking** - Individual normal ranges, deviation alerts, adaptive learning
-- 💯 **Integrated Health Scores** - Overall, cognitive, energy, fluency, and stability ratings (0-100)
-- 🔮 **Predictive Analytics** - Next low energy periods, optimal performance times, risk assessments
-- 🏥 **Clinical Insights** - Primary concerns, positive indicators, personalized recommendations
+**✨ What's New in v0.6.0 - The Simplification Update:**
+- 🎯 **Speech Vitality Index (SVI)** - One reliable score (0-100) replacing 20+ complex biomarkers
+- ✅ **Quality-First Analysis** - Only analyzes 5+ minute conversations with clear audio
+- 📊 **Simple Components** - Fluency (words per burst), Energy (dynamic range), Consistency (stability)
+- 🚫 **No Bad Data** - Rejects poor quality segments instead of statistical guessing
+- 📈 **Clear Trends** - "Improving", "Stable", "Declining", or "Insufficient Data"
+- 💡 **Actionable Insights** - "Have a conversation" not "Your pause duration is 2.3σ above normal"
 
-**Previous v0.4.0 Features:**
-- 🧠 **Speech Biomarker Analysis** - Clinical-grade statistical analysis with confidence intervals
-- 🎯 **SpeechClock & SpeechAge** - Natural aliases for speech pattern monitoring
-- 📊 **Population Percentiles** - Compare speech metrics vs. normal adult baselines
+**Why the Change?**
+We applied Occam's Razor: Better to be a reliable flashlight than an unreliable lighthouse. The pendant records ~30% of your day randomly - trying to extract 24/7 health insights from this was like measuring running speed by randomly sampling your day. Now we focus on what we can measure well: quality conversations.
+
+**Legacy Features (v0.4.0-v0.5.1):**
+- Complex speech biomarkers with 20+ metrics (replaced by SVI)
+- Population percentiles and statistical analysis (removed - context-dependent)
+- Multiple health scores and predictions (simplified to one score)
 
 **Previous v0.3.1 Features:**
 - 📅 **50+ Natural Time Expressions** - "last month", "tomorrow", "this weekend", etc.
@@ -75,7 +101,7 @@ You can run this intelligent MCP server directly using npx without any installat
 }
 ```
 
-This automatically downloads v0.5.0 with advanced health monitoring features when your MCP client starts.
+This automatically downloads v0.5.1 with advanced health monitoring features when your MCP client starts.
 
 ## 🎯 Perfect for Claude AI Users
 
@@ -90,11 +116,9 @@ The v0.5.0 upgrade transforms your Claude conversations with comprehensive healt
 - 👥 "How much did I talk with my manager this week?"
 - 🔍 "When did I last discuss the budget proposal?"
 - 📊 "Show me my productivity insights for today"
-- 🧠 "What's my speechclock?" - Get comprehensive health analysis
-- 😴 "Am I getting enough sleep?" - Detect sleep from quiet periods
-- ⚡ "When am I most energetic?" - Find your peak performance times
-- 🗣️ "Am I dominating conversations?" - Check speaking balance
-- 🔮 "Predict my energy for this afternoon" - Get fatigue forecasts
+- 🧠 "What's my speechclock?" - Get your Speech Vitality Score
+- 📊 "Show me my speech age" - View your SVI trend over time
+- ✅ "How's my speech health?" - Simple score with clear next steps
 
 > **What's MCP?**  
 > [Model Context Protocol](https://modelcontextprotocol.io/introduction) is an open standard for connecting AI models to external tools and data—think of it like the USB-C port or even the HTTP protocol for AI—universal, reliable, and designed for extensibility. The standard that everyone adopts. It enables rich integrations, custom workflows, and seamless communication between AI and the tools you use every day.
@@ -260,41 +284,28 @@ If your `mcpServers` object already contains other servers (like `"notion": {...
     - **Focus areas:** technical, financial, decisions, research, all
     - **Perfect for:** "What were the exact specifications mentioned?"
 
-14. **`limitless_analyze_speech_biomarkers`** (aliases: `speechclock`, `speechage`) - Revolutionary health monitoring through speech patterns 🆕
-    - **Core Biomarkers:** Speech rate, pause patterns, vocabulary complexity with confidence intervals
-    - **Advanced Analysis:** 
-      - 🎵 **Rhythm Analysis:** Speech entropy, burst-pause ratio, cognitive load detection
-      - 🗣️ **Disfluency Detection:** Filler words, repairs, speech planning difficulties
-      - ⚡ **Energy Assessment:** Fatigue scoring, circadian patterns, predictive analytics
-      - 📊 **Personal Baselines:** Individual normal ranges, deviation alerts
-    - **Integrated Health Scores:** Overall, cognitive, energy, fluency, stability (0-100 scales)
-    - **Time ranges:** Natural language support for all time expressions
+14. **`speechclock`** / **`speechage`** - Speech Vitality Index (SVI) 🆕
+    - **What it is:** A single, reliable health score (0-100) calculated from quality conversations only
+    - **How it works:** 
+      - ✅ **Quality First:** Only analyzes 5+ minute conversations with clear audio
+      - 🎯 **Three Simple Components:** 
+        - Fluency: Words per speech burst (not per minute)
+        - Energy: Dynamic range and variation
+        - Consistency: Stability throughout conversation
+      - 📊 **Clear Trends:** "Improving", "Stable", "Declining", or "Insufficient Data"
+    - **Why it's revolutionary:** No fake statistics from bad data - if we can't measure it well, we don't measure it
     - **Parameters:**
-      - `time_expression` (optional): "today", "this week", "last month", "past 3 months", "Q1 2024", etc.
-      - `timezone` (optional): IANA timezone (e.g., "America/New_York", "Europe/London")
-      - `include_trends` (optional, default true): Statistical trend analysis with p-values
-      - `include_percentiles` (optional, default true): Population comparison percentiles
+      - `time_expression` (optional): "past 7 days" (default), "today", "this week", etc.
+      - `timezone` (optional): IANA timezone
+      - `detailed` (optional): Show component scores breakdown
     - **Usage examples:**
-      - "What's my speechclock this week?"
-      - "Show my speechage for last month"
-      - "Analyze my speech patterns from January to March"
-      - "Am I showing signs of fatigue?"
-      - "How's my cognitive load today?"
-      - "What are my peak social hours?"
-      - "Did I get enough sleep last night?"
-      - "Am I talking too much in conversations?"
-      - "Show my daily activity patterns"
-      - "When do I have the most energy?"
-    - **Output:** Comprehensive health report including:
-      - Statistical biomarkers with 95% confidence intervals
-      - Rhythm consistency and fluency ratings
-      - Energy levels and fatigue indicators
-      - Environmental activity patterns (speaking/listening/silent hours)
-      - Sleep detection and quality assessment
-      - Social patterns and conversational dynamics
-      - Personal baseline deviations
-      - Clinical insights and recommendations
-      - Predictive risk assessments
+      - "What's my speechclock?" → "Speech Vitality: 82/100, Trend: Stable"
+      - "Show my speechage" → Simple score with actionable next steps
+    - **Output:** 
+      - Your SVI score (0-100) with confidence level
+      - Trend direction with confidence percentage
+      - Clear next action (e.g., "Have a 5+ minute conversation")
+      - Recent score history (if available)
 
 ### 📚 Core Foundation Tools
 
@@ -306,93 +317,50 @@ If your `mcpServers` object already contains other servers (like `"notion": {...
 
 ## 💬 Real-World Examples with v0.5.0 Features
 
-### 🧠 Health Monitoring Examples
+### 🧠 Speech Vitality Examples
 
-**Basic Health Check:**
+**Basic Score Check:**
 ```
-User: "What's my speechclock today?"
-Claude: *Analyzes speech patterns, energy levels, and provides health insights*
-```
+User: "What's my speechclock?"
+Claude: Speech Vitality: 78/100
+Trend: Stable (85% confidence)
 
-**Fatigue Detection:**
-```
-User: "Am I showing signs of fatigue?"
-Claude: *Checks energy scores, speech rate decline, vocabulary simplification*
+Next Step: Your speech vitality is being tracked
 ```
 
-**Sleep Quality:**
+**Insufficient Data:**
 ```
-User: "Did I get enough sleep last night?"
-Claude: *Detects quiet periods, estimates sleep duration, checks consistency*
+User: "Show my speechage"
+Claude: Speech Vitality: --/100
+
+Have a 5+ minute conversation to establish baseline
 ```
 
-### 🗣️ Communication Style Analysis
+**Detailed View:**
+```
+User: "What's my speech vitality with details?"
+Claude: Speech Vitality: 82/100
+Trend: Improving (72% confidence)
 
-**Conversation Balance:**
-```
-User: "Am I talking too much in meetings?"
-Claude: *Analyzes speaking ratio, conversational dominance, turn-taking patterns*
-```
+Components:
+• Fluency: 85/100
+• Energy: 78/100
+• Consistency: 83/100
 
-**Social Patterns:**
-```
-User: "What are my peak social hours?"
-Claude: *Identifies when you have most conversations, interaction intensity*
-```
-
-**Isolation Detection:**
-```
-User: "Am I spending too much time alone?"
-Claude: *Counts isolation periods, checks social engagement levels*
+Next Step: 2 more conversations needed for reliable trends
 ```
 
-### ⚡ Performance Optimization
+### 📊 Why Speech Vitality Index?
 
-**Energy Patterns:**
-```
-User: "When do I have the most energy?"
-Claude: *Shows circadian patterns, predicts high/low energy periods*
-```
+**The Problem:** The pendant records ~30% of your day randomly. Previous versions tried to extract 24/7 health insights from this partial data using complex statistics.
 
-**Cognitive Load:**
-```
-User: "How's my cognitive load this week?"
-Claude: *Analyzes disfluencies, pause patterns, speech planning difficulty*
-```
+**The Solution:** Focus on what we can measure reliably - quality conversations. One clear score from good data beats 20 metrics from questionable data.
 
-**Productivity Insights:**
-```
-User: "Show my speech patterns during work hours vs evenings"
-Claude: *Compares activity levels, fluency, and energy across time periods*
-```
-
-### 📊 Trend Analysis
-
-**Long-term Monitoring:**
-```
-User: "How have my speech patterns changed over the past month?"
-Claude: *Shows trends with statistical significance, confidence intervals*
-```
-
-**Baseline Comparison:**
-```
-User: "Am I deviating from my normal patterns?"
-Claude: *Compares current metrics to personal baseline, alerts on changes*
-```
-
-### 🏥 Clinical-Grade Analysis
-
-**Comprehensive Report:**
-```
-User: "Give me a full speech biomarker analysis for last week"
-Claude: *Provides detailed report with:*
-- Speech rate: 145 WPM [95% CI: 142-148]
-- Fluency score: 82/100
-- Energy level: 75/100 
-- Sleep detected: 7.2 hours average
-- Social intensity: 65%
-- Recommendations for improvement
-```
+**Key Benefits:**
+- ✅ 100% reliable data (quality conversations only)
+- 🎯 One score you can actually understand
+- 📊 Clear trends without statistical gymnastics
+- 💡 Actionable next steps, not confusing metrics
 
 ## 📅 Supported Natural Time Expressions (v0.5.0)
 
@@ -511,3 +479,16 @@ Have ideas, improvements, or feedback? Feel free to open an issue or PR—contri
 
 **Repository:** [https://github.com/199-biotechnologies/mcp-limitless-enhanced](https://github.com/199-biotechnologies/mcp-limitless-enhanced)  
 **NPM Package:** [https://www.npmjs.com/package/199bio-mcp-limitless-server](https://www.npmjs.com/package/199bio-mcp-limitless-server)
+
+## 📚 Documentation
+
+### Current Implementation (v0.6.0+)
+
+- **[Speech Vitality Index: A Simplified Approach](docs/SPEECH_VITALITY_INDEX.md)** - The current implementation using a single, reliable score from quality conversations. Explains the rationale for simplification and the methodology behind SVI.
+
+### Legacy Documentation (v0.4-0.5)
+
+- **[Speech Biomarker Analysis: Methodology and Clinical Validation](docs/SPEECH_BIOMARKERS.md)** - Complex statistical methodology with 20+ biomarkers (deprecated)
+- **[Advanced Speech Biomarkers: Enhanced Health Monitoring](docs/ADVANCED_SPEECH_BIOMARKERS.md)** - Rhythm analysis, disfluency detection, and energy assessment (deprecated)
+
+The legacy documentation is preserved for reference but the complex approach has been replaced with the simpler, more reliable Speech Vitality Index.
