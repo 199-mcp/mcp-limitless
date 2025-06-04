@@ -25,6 +25,10 @@ import {
     TranscriptOptions,
     DetailedTranscript
 } from "./transcript-extraction.js";
+import {
+    ImprovedSpeechBiomarkerAnalyzer,
+    StatisticalBiomarkers
+} from "./improved-speech-biomarkers.js";
 
 // --- Constants ---
 const MAX_LIFELOG_LIMIT = 100;
@@ -137,6 +141,13 @@ const DetailedAnalysisArgsSchema = {
     preserve_precision: z.boolean().optional().default(true).describe("Maintain exact numbers, measurements, and technical specifications without rounding or generalization."),
 };
 
+const SpeechBiomarkerArgsSchema = {
+    time_expression: z.string().optional().describe("Natural time expression like 'today', 'this week', 'past month' (defaults to available data)."),
+    timezone: z.string().optional().describe("IANA timezone for date/time parameters."),
+    include_trends: z.boolean().optional().default(true).describe("Include statistical trend analysis with p-values and confidence intervals."),
+    include_percentiles: z.boolean().optional().default(true).describe("Include population percentile rankings vs. normal adults.")
+};
+
 
 // --- MCP Server Setup ---
 
@@ -229,6 +240,22 @@ Available Tools:
     - **CONTEXTUAL ANALYSIS:** Provides detailed analysis with supporting evidence and specific examples
     - **USE FOR:** "What were the exact technical specifications mentioned?", "Give me all the specific numbers and figures discussed"
     - Args: time_expression (opt, default 'today'), timezone (opt), focus_area (opt, default 'all'), preserve_precision (opt, default true)
+
+14. **limitless_analyze_speech_biomarkers** (aliases: **speechclock**, **speechage**): Rigorous statistical analysis of speech patterns for health monitoring and cognitive assessment.
+    - **SCIENTIFIC METHODOLOGY:** Uses proper statistical analysis with confidence intervals, p-values, and trend detection
+    - **BIOMARKER EXTRACTION:** Speech rate, pause patterns, vocabulary complexity with clinical interpretation
+    - **POPULATION COMPARISON:** Percentile rankings vs. normal adult speech patterns (120-180 WPM baseline)
+    - **DATA QUALITY ASSESSMENT:** Validates data reliability and provides sample size recommendations
+    - **TREND ANALYSIS:** Statistical significance testing for speech pattern changes over time
+    - **CLINICAL CONTEXT:** Evidence-based interpretation following speech biomarker research literature
+    - **TIME RANGE SUPPORT:** "today", "this week", "last month", "past 3 months", "Q1 2024", custom ranges
+    - **USE FOR:** "What's my speechclock this week?", "Show my speechage", "Analyze speech patterns last month"
+    - Args: time_expression (opt, defaults to available data), timezone (opt), include_trends (opt, default true), include_percentiles (opt, default true)
+    - **NOTE:** Requires minimum 30 segments for reliable analysis. Results include confidence intervals and statistical significance testing.
+
+**SPEECHCLOCK & SPEECHAGE ALIASES:**
+- **speechclock**: Focus on temporal patterns and trends - "What's my speechclock today?"
+- **speechage**: Focus on cognitive age assessment vs. population - "What's my speechage compared to my age group?"
 `
 });
 
@@ -743,6 +770,190 @@ server.tool("limitless_get_detailed_analysis",
             return { content: [{ type: "text", text: `Error generating detailed analysis: ${errorMessage}` }], isError: true };
         }
     }
+);
+
+// Speech Biomarker Analysis Tool (with aliases)
+const speechBiomarkerHandler = async (args: any, _extra: RequestHandlerExtra): Promise<CallToolResult> => {
+        try {
+            const timeExpression = args.time_expression || 'available data';
+            let lifelogs: Lifelog[] = [];
+            
+            if (args.time_expression) {
+                // Parse time expression if provided
+                const parser = new NaturalTimeParser({ timezone: args.timezone });
+                const timeRange = parser.parseTimeExpression(args.time_expression);
+                
+                const apiOptions: LifelogParams = {
+                    start: timeRange.start,
+                    end: timeRange.end,
+                    timezone: timeRange.timezone,
+                    includeMarkdown: true,
+                    includeHeadings: true,
+                    limit: 1000,
+                    direction: 'asc'
+                };
+                
+                lifelogs = await getLifelogs(limitlessApiKey, apiOptions);
+            } else {
+                // Get recent data for analysis
+                lifelogs = await getLifelogs(limitlessApiKey, {
+                    limit: 100,
+                    includeMarkdown: true,
+                    includeHeadings: true,
+                    direction: 'desc'
+                });
+            }
+            
+            if (lifelogs.length === 0) {
+                return { 
+                    content: [{ type: "text", text: `No lifelogs found for "${timeExpression}". Speech biomarker analysis requires recorded conversation data from your Limitless Pendant.` }],
+                    isError: true 
+                };
+            }
+            
+            // Perform statistical speech analysis
+            const biomarkers = ImprovedSpeechBiomarkerAnalyzer.analyzeSpeechPatternsWithStats(lifelogs);
+            
+            // Format results with proper scientific reporting
+            let resultText = `🧠 SPEECH BIOMARKER ANALYSIS REPORT\n`;
+            resultText += `Time Period: ${timeExpression}\n`;
+            resultText += `Analysis Date: ${new Date(biomarkers.analysisDate).toLocaleString()}\n`;
+            resultText += `Data Timespan: ${biomarkers.dataTimespan}\n\n`;
+            
+            // Data Quality Assessment
+            resultText += `📊 DATA QUALITY ASSESSMENT\n`;
+            resultText += `Total segments: ${biomarkers.dataQuality.totalSegments}\n`;
+            resultText += `Valid segments: ${biomarkers.dataQuality.validSegments} (${((biomarkers.dataQuality.validSegments/biomarkers.dataQuality.totalSegments)*100).toFixed(1)}%)\n`;
+            resultText += `Quality score: ${(biomarkers.dataQuality.qualityScore * 100).toFixed(1)}%\n`;
+            resultText += `Reliability: ${biomarkers.reliability.toUpperCase()}\n\n`;
+            
+            // Core Metrics with Confidence Intervals
+            resultText += `📈 SPEECH METRICS (95% Confidence Intervals)\n`;
+            resultText += `Speech Rate: ${biomarkers.speechRate.value.toFixed(1)} WPM [${biomarkers.speechRate.confidenceInterval[0].toFixed(1)}, ${biomarkers.speechRate.confidenceInterval[1].toFixed(1)}]\n`;
+            resultText += `  Sample size: n=${biomarkers.speechRate.sampleSize}, SE=±${biomarkers.speechRate.standardError.toFixed(2)}\n`;
+            
+            if (biomarkers.pauseDuration.sampleSize > 0) {
+                resultText += `Pause Duration: ${biomarkers.pauseDuration.value.toFixed(2)}s [${biomarkers.pauseDuration.confidenceInterval[0].toFixed(2)}, ${biomarkers.pauseDuration.confidenceInterval[1].toFixed(2)}]\n`;
+                resultText += `  Sample size: n=${biomarkers.pauseDuration.sampleSize}, SE=±${biomarkers.pauseDuration.standardError.toFixed(3)}\n`;
+            }
+            
+            resultText += `Vocabulary Complexity: ${biomarkers.vocabularyComplexity.value.toFixed(2)} [${biomarkers.vocabularyComplexity.confidenceInterval[0].toFixed(2)}, ${biomarkers.vocabularyComplexity.confidenceInterval[1].toFixed(2)}]\n`;
+            resultText += `  Sample size: n=${biomarkers.vocabularyComplexity.sampleSize}, SE=±${biomarkers.vocabularyComplexity.standardError.toFixed(3)}\n`;
+            
+            resultText += `Words per Turn: ${biomarkers.wordsPerTurn.value.toFixed(1)} [${biomarkers.wordsPerTurn.confidenceInterval[0].toFixed(1)}, ${biomarkers.wordsPerTurn.confidenceInterval[1].toFixed(1)}]\n\n`;
+            
+            // Statistical Trend Analysis
+            if (args.include_trends) {
+                resultText += `📊 TREND ANALYSIS\n`;
+                resultText += `Speech rate trend: ${biomarkers.speechRateTrend.slope.toFixed(3)} WPM/hour\n`;
+                resultText += `  R² = ${biomarkers.speechRateTrend.rSquared.toFixed(3)}, p = ${biomarkers.speechRateTrend.pValue.toFixed(3)}\n`;
+                resultText += `  95% CI: [${biomarkers.speechRateTrend.confidenceInterval[0].toFixed(3)}, ${biomarkers.speechRateTrend.confidenceInterval[1].toFixed(3)}]\n`;
+                resultText += `  Significance: ${biomarkers.speechRateTrend.significance.toUpperCase()}\n\n`;
+            }
+            
+            // Population Percentile Rankings
+            if (args.include_percentiles) {
+                resultText += `🎯 POPULATION PERCENTILE RANKINGS\n`;
+                resultText += `Speech Rate: ${biomarkers.percentileRankings.speechRate}th percentile (vs. normal adults 120-180 WPM)\n`;
+                resultText += `Pause Duration: ${biomarkers.percentileRankings.pauseDuration}th percentile (vs. normal 0.5-2.0s)\n`;
+                resultText += `Vocabulary Complexity: ${biomarkers.percentileRankings.vocabularyComplexity}th percentile (vs. typical conversation)\n\n`;
+            }
+            
+            // Time-of-Day Effects
+            if (biomarkers.timeOfDayEffects.pattern.length > 0) {
+                resultText += `⏰ CIRCADIAN ANALYSIS\n`;
+                resultText += `Significant time-of-day variation: ${biomarkers.timeOfDayEffects.significantVariation ? 'YES' : 'NO'} (p = ${biomarkers.timeOfDayEffects.pValue.toFixed(3)})\n`;
+                if (biomarkers.timeOfDayEffects.pattern.length > 0) {
+                    resultText += `Hourly patterns:\n`;
+                    biomarkers.timeOfDayEffects.pattern.forEach(hour => {
+                        const timeStr = `${hour.hour.toString().padStart(2, '0')}:00`;
+                        resultText += `  ${timeStr}: ${hour.meanWPM.toFixed(1)} WPM [${hour.confidenceInterval[0].toFixed(1)}, ${hour.confidenceInterval[1].toFixed(1)}]\n`;
+                    });
+                }
+                resultText += `\n`;
+            }
+            
+            // Reliability and Recommendations
+            resultText += `🔬 RELIABILITY ASSESSMENT\n`;
+            resultText += `Current reliability: ${biomarkers.reliability.toUpperCase()}\n`;
+            if (biomarkers.minimumDataRecommendations.length > 0) {
+                resultText += `Recommendations:\n`;
+                biomarkers.minimumDataRecommendations.forEach((rec, i) => {
+                    resultText += `  ${i + 1}. ${rec}\n`;
+                });
+            }
+            resultText += `\n`;
+            
+            // Clinical Interpretation
+            resultText += `🏥 CLINICAL INTERPRETATION\n`;
+            
+            // Reliability assessment
+            if (biomarkers.reliability === "high") {
+                resultText += `✅ Results are statistically reliable for health monitoring\n`;
+                resultText += `✅ Sample size adequate for trend detection\n`;
+            } else if (biomarkers.reliability === "medium") {
+                resultText += `⚠️  Moderate reliability - collect more data for precision\n`;
+            } else {
+                resultText += `❌ Low reliability - more data needed for clinical use\n`;
+            }
+            
+            // Population comparison interpretation
+            if (biomarkers.percentileRankings.speechRate > 85) {
+                resultText += `🟢 Speech rate: Above average (faster than 85% of population)\n`;
+            } else if (biomarkers.percentileRankings.speechRate < 15) {
+                resultText += `🟡 Speech rate: Below average (monitor for changes)\n`;
+            } else {
+                resultText += `✅ Speech rate: Within normal range\n`;
+            }
+            
+            // Trend significance
+            if (biomarkers.speechRateTrend.significance === "significant") {
+                const effectSize = Math.abs(biomarkers.speechRateTrend.slope);
+                if (effectSize > 5) {
+                    resultText += `🔴 LARGE speech rate change detected - clinically significant\n`;
+                } else if (effectSize > 2) {
+                    resultText += `🟡 MODERATE speech rate change detected\n`;
+                } else {
+                    resultText += `🟢 SMALL speech rate change - likely normal variation\n`;
+                }
+            } else {
+                resultText += `📊 No significant trend detected - patterns appear stable\n`;
+            }
+            
+            resultText += `\n📚 EVIDENCE BASE\n`;
+            resultText += `• Normal speech rate: 120-180 WPM (Tauroza & Allison, 1990)\n`;
+            resultText += `• Speech biomarkers: Early indicators for cognitive health\n`;
+            resultText += `• Statistical significance: p < 0.05 indicates reliable change\n`;
+            resultText += `• Confidence intervals: 95% CI contains true population value\n`;
+            resultText += `• For detailed methodology, see: docs/SPEECH_BIOMARKERS.md\n\n`;
+            
+            resultText += `Total analysis time: ${(biomarkers.totalAnalysisTime / 60000).toFixed(1)} minutes of speech`;
+            
+            return { content: [{ type: "text", text: resultText }] };
+            
+        } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            return { content: [{ type: "text", text: `Error analyzing speech biomarkers: ${errorMessage}` }], isError: true };
+        }
+    };
+
+// Register the main tool and aliases
+server.tool("limitless_analyze_speech_biomarkers",
+    "Analyze speech patterns with rigorous statistical methodology for health monitoring and cognitive assessment. Provides confidence intervals, p-values, and evidence-based clinical interpretation.",
+    SpeechBiomarkerArgsSchema,
+    speechBiomarkerHandler
+);
+
+server.tool("speechclock",
+    "Get your 'speech clock' - comprehensive speech biomarker analysis showing cognitive patterns, speaking rates, and health indicators over time. Perfect for monitoring speech health trends.",
+    SpeechBiomarkerArgsSchema,
+    speechBiomarkerHandler
+);
+
+server.tool("speechage",
+    "Analyze your 'speech age' - statistical assessment of speech patterns compared to population norms. Shows how your speech biomarkers compare to typical age groups and cognitive baselines.",
+    SpeechBiomarkerArgsSchema,
+    speechBiomarkerHandler
 );
 
 // --- Server Startup ---

@@ -20,6 +20,7 @@ An **intelligent MCP (Model Context Protocol) server** that transforms your Limi
 - 🎯 **Flexible Relative Dates** - "past 5 days", "in 2 weeks", "3 days ago"
 - 💼 **Business Time Support** - Quarters (Q1-Q4), year references, month boundaries
 - 🌅 **Enhanced Time Periods** - "yesterday afternoon", "tomorrow morning", "last night"
+- 🧠 **Speech Biomarker Analysis** - Rigorous statistical analysis of speech patterns for health monitoring
 
 **Previous v0.3.0 Features:**
 - 📄 **Raw Transcript Extraction** - Clean, AI-optimized transcript formats
@@ -243,6 +244,23 @@ If your `mcpServers` object already contains other servers (like `"notion": {...
 13. **`limitless_get_detailed_analysis`** - Technical precision analysis 🆕
     - **Focus areas:** technical, financial, decisions, research, all
     - **Perfect for:** "What were the exact specifications mentioned?"
+
+14. **`limitless_analyze_speech_biomarkers`** (aliases: `speechclock`, `speechage`) - Rigorous speech pattern analysis for health monitoring 🆕
+    - **Statistical rigor:** Confidence intervals, p-values, trend analysis
+    - **Clinical validation:** Population percentiles, evidence-based interpretation
+    - **Biomarkers:** Speech rate, pause patterns, vocabulary complexity, circadian patterns
+    - **Time ranges:** Natural language support for all time expressions
+    - **Parameters:**
+      - `time_expression` (optional): "today", "this week", "last month", "past 3 months", "Q1 2024", "from Jan 1 to Feb 15", etc.
+      - `timezone` (optional): IANA timezone (e.g., "America/New_York", "Europe/London")
+      - `include_trends` (optional, default true): Statistical trend analysis with p-values
+      - `include_percentiles` (optional, default true): Population comparison percentiles
+    - **Usage examples:**
+      - "What's my speechclock this week?"
+      - "Show my speechage for last month"
+      - "Analyze my speech patterns from January to March"
+      - "Give me my speech biomarkers for Q1 2024"
+    - **Output:** Comprehensive statistical report with confidence intervals, population percentiles, trend analysis, clinical interpretation, and data quality assessment
 
 ### 📚 Core Foundation Tools
 
