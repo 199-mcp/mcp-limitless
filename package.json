@@ -1,7 +1,7 @@
 {
   "name": "199bio-mcp-limitless-server",
-  "version": "0.3.1",
-  "description": "Advanced MCP Server with AI-powered Limitless API features: natural time queries, meeting detection, action item extraction, daily summaries, and speaker analytics",
+  "version": "0.4.0",
+  "description": "Revolutionary MCP Server with clinical-grade speech biomarker analysis, AI-powered Limitless API features, statistical health monitoring, and comprehensive conversation analytics",
   "license": "MIT",
   "author": "Boris Djordjevic <boris@199longevity.com> (199 Longevity), Ryan Boyle (Original)",
   "type": "module",
@@ -36,6 +36,10 @@
     "mcp",
     "model-context-protocol",
     "limitless",
+    "speech-biomarkers",
+    "health-monitoring",
+    "cognitive-assessment",
+    "statistical-analysis",
     "lifelog",
     "pendant",
     "ai",
@@ -46,11 +50,13 @@
     "natural-language",
     "analytics",
     "productivity",
+    "speechclock",
+    "speechage",
     "199-longevity"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/199-biotechnologies/limitless-bettermcp.git"
+    "url": "git+https://github.com/199-biotechnologies/mcp-limitless-enhanced.git"
   },
   "publishConfig": {
     "access": "public",
