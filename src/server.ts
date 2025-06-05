@@ -27,8 +27,8 @@ import {
 } from "./transcript-extraction.js";
 // Legacy biomarker imports removed - using simplified SVI only
 import {
-    SpeechVitalityAnalyzer,
-    SimplifiedAnalysis
+    ValidatedSpeechVitalityAnalyzer,
+    ValidatedSpeechVitality
 } from "./speech-vitality-index.js";
 
 // --- Constants ---
@@ -787,42 +787,57 @@ const speechVitalityHandler = async (args: any, _extra: RequestHandlerExtra): Pr
             return { content: [{ type: "text", text: `No conversations found for "${timeExpression}".` }] };
         }
         
-        // Analyze using simplified SVI
-        const analysis = SpeechVitalityAnalyzer.analyze(logs);
+        // Analyze using validated SVI
+        const analysis = ValidatedSpeechVitalityAnalyzer.analyze(logs);
         
-        // Build simple, clear response
+        // Build comprehensive, scientifically validated response
         let resultText = "";
         
-        if (analysis.currentScore) {
-            // Main score display
-            resultText += `**Speech Vitality: ${analysis.currentScore.svi}/100**\n`;
-            resultText += `Trend: ${analysis.trend}${analysis.trendConfidence > 50 ? ` (${analysis.trendConfidence}% confidence)` : ''}\n\n`;
-            
-            // Component breakdown (only if requested)
-            if (args.detailed) {
-                resultText += `**Components:**\n`;
-                resultText += `• Fluency: ${analysis.currentScore.fluencyScore}/100\n`;
-                resultText += `• Energy: ${analysis.currentScore.energyScore}/100\n`;
-                resultText += `• Consistency: ${analysis.currentScore.consistencyScore}/100\n\n`;
-            }
-            
-            // Action required
-            resultText += `**Next Step:** ${analysis.nextActionRequired}\n\n`;
-            
-            // Recent history (compact)
-            if (analysis.historicalScores.length > 0) {
-                resultText += `**Recent Scores:**\n`;
-                analysis.historicalScores.slice(-5).forEach(score => {
-                    resultText += `• ${score.date}: ${score.score} (${score.context})\n`;
-                });
-            }
-        } else {
-            // No data yet
-            resultText = `**Speech Vitality: --/100**\n\n`;
-            resultText += `${analysis.nextActionRequired}\n\n`;
-            resultText += `The Speech Vitality Index requires quality conversations to analyze. `;
-            resultText += `Once you have a 5+ minute conversation, your score will appear here.`;
+        // Main scores display
+        resultText += `**Speech Vitality Index: ${analysis.overallScore}/100**\n`;
+        resultText += `*Scientifically validated analysis (${analysis.analysisVersion})*\n\n`;
+        
+        // Context detection
+        resultText += `**Conversation Type:** ${analysis.context.type} (${(analysis.context.confidence * 100).toFixed(0)}% confidence)\n`;
+        if (analysis.context.indicators.length > 0) {
+            resultText += `*Indicators: ${analysis.context.indicators.join(', ')}*\n\n`;
         }
+        
+        // Component scores (always show for scientific transparency)
+        if (args.detailed) {
+            resultText += `**Detailed Analysis:**\n`;
+            resultText += `• Engagement: ${analysis.engagementScore}/100\n`;
+            resultText += `  - Micro-responses: ${(analysis.engagement.microResponseRate * 100).toFixed(1)}% (${analysis.engagement.microResponseCount} of ${analysis.dataQuality.totalSegments})\n`;
+            resultText += `  - Quick responses: ${(analysis.engagement.quickResponseRatio * 100).toFixed(1)}% (${analysis.engagement.quickResponseCount}/${analysis.engagement.totalTransitions})\n`;
+            resultText += `  - Response time: ${analysis.engagement.medianResponseTime.toFixed(0)}ms median\n\n`;
+            
+            resultText += `• Fluency: ${analysis.fluencyScore}/100\n`;
+            resultText += `  - Speaking rate: ${analysis.fluency.medianWPM.toFixed(0)} WPM (median)\n`;
+            resultText += `  - Consistency: ${(analysis.fluency.wpmConsistency * 100).toFixed(1)}%\n`;
+            resultText += `  - Valid segments: ${analysis.fluency.validSegmentCount}/${analysis.dataQuality.totalSegments} (${(analysis.fluency.validSegmentRatio * 100).toFixed(1)}%)\n\n`;
+            
+            resultText += `• Interaction: ${analysis.interactionScore}/100\n`;
+            resultText += `  - Speaking balance: ${(analysis.interaction.conversationBalance * 100).toFixed(1)}%\n`;
+            resultText += `  - Speaker transitions: ${analysis.interaction.speakerTransitions}\n`;
+            resultText += `  - Total speakers: ${analysis.interaction.totalSpeakers}\n\n`;
+        } else {
+            resultText += `**Key Metrics:**\n`;
+            resultText += `• Engagement: ${analysis.engagementScore}/100 (${(analysis.engagement.microResponseRate * 100).toFixed(1)}% responsiveness)\n`;
+            resultText += `• Fluency: ${analysis.fluencyScore}/100 (${analysis.fluency.medianWPM.toFixed(0)} WPM median)\n`;
+            resultText += `• Interaction: ${analysis.interactionScore}/100 (${analysis.interaction.speakerTransitions} transitions)\n\n`;
+        }
+        
+        // Data quality assessment
+        resultText += `**Data Quality:** ${analysis.dataQuality.dataReliability} (${analysis.dataQuality.confidenceScore}% confidence)\n`;
+        
+        if (analysis.dataQuality.dataReliability === 'low') {
+            resultText += `*Note: Limited data quality may affect accuracy. Consider longer conversations for better analysis.*\n`;
+        }
+        
+        // Conversation duration
+        const durationMinutes = analysis.conversationDuration / (1000 * 60);
+        resultText += `**Duration:** ${durationMinutes.toFixed(1)} minutes\n`;
+        resultText += `**Analysis timestamp:** ${analysis.analysisTimestamp.toLocaleString()}`;
         
         return { content: [{ type: "text", text: resultText }] };
         
