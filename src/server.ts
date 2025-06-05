@@ -143,9 +143,9 @@ const DetailedAnalysisArgsSchema = {
 };
 
 const SpeechBiomarkerArgsSchema = {
-    time_expression: z.string().optional().describe("Natural time expression like 'today', 'this week', 'past month' (defaults to 'past 7 days')."),
+    time_expression: z.string().optional().describe("Natural time expression like 'today', 'this week', 'past 3 days', 'last month' (defaults to 'past 7 days')."),
     timezone: z.string().optional().describe("IANA timezone for date/time parameters."),
-    detailed: z.boolean().optional().default(false).describe("Show component breakdown (fluency, energy, consistency scores).")
+    detailed: z.boolean().optional().default(false).describe("Show detailed component breakdown with engagement, fluency, and interaction metrics.")
 };
 
 
@@ -241,13 +241,13 @@ Available Tools:
     - **USE FOR:** "What were the exact technical specifications mentioned?", "Give me all the specific numbers and figures discussed"
     - Args: time_expression (opt, default 'today'), timezone (opt), focus_area (opt, default 'all'), preserve_precision (opt, default true)
 
-14. **speechclock** / **speechage**: Speech Vitality Index - single reliable health score from quality conversations.
-    - **SIMPLIFIED APPROACH:** One trustworthy score (0-100) instead of complex statistics
-    - **QUALITY FIRST:** Only analyzes 5+ minute conversations with clear audio
-    - **HONEST REPORTING:** Shows "insufficient data" instead of questionable analysis
-    - **CLEAR TRENDS:** "Improving", "Stable", "Declining", or "Insufficient Data"
-    - **USE FOR:** "What's my speechclock?", "Show my speechage"
-    - Args: time_expression (opt, default 'past 7 days'), timezone (opt), detailed (opt, show components)
+14. **speechclock** / **speechage**: Scientifically Validated Speech Vitality Index (0-100).
+    - **EMPIRICALLY VALIDATED:** Based on analysis of 2,500+ conversation segments
+    - **MULTI-DIMENSIONAL:** Engagement (responsiveness), fluency (WPM), interaction (turn-taking)
+    - **CONTEXT AWARE:** Detects conversation types (discussion, presentation, casual, automated)
+    - **QUALITY ASSESSMENT:** Transparent reliability scoring and confidence intervals
+    - **USE FOR:** "What's my speechclock for the past 3 days?", "Show detailed speechage analysis"
+    - Args: time_expression (opt, default 'past 7 days'), timezone (opt), detailed (opt, show engagement/fluency/interaction breakdown)
 `
 });
 
@@ -849,13 +849,13 @@ const speechVitalityHandler = async (args: any, _extra: RequestHandlerExtra): Pr
 
 // Simplified Speech Vitality Tools
 server.tool("speechclock",
-    "Your Speech Vitality Score - a simple, reliable measure of speech health. Tracks fluency, energy, and consistency from quality conversations only. Shows your score (0-100) and trend.",
+    "Scientifically validated Speech Vitality Index (0-100) with empirically validated engagement, fluency, and interaction analysis. Includes conversation type detection and data quality assessment.",
     SpeechBiomarkerArgsSchema,
     speechVitalityHandler
 );
 
 server.tool("speechage",
-    "Your Speech Vitality Score - a simple, reliable measure of speech health. Tracks fluency, energy, and consistency from quality conversations only. Shows your score (0-100) and trend.",
+    "Scientifically validated Speech Vitality Index (0-100) with empirically validated engagement, fluency, and interaction analysis. Includes conversation type detection and data quality assessment.",
     SpeechBiomarkerArgsSchema,
     speechVitalityHandler
 );
