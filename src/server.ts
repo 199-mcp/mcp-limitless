@@ -153,7 +153,7 @@ const SpeechBiomarkerArgsSchema = {
 
 const server = new McpServer({
     name: "LimitlessMCP",
-    version: "0.7.3",
+    version: "0.8.0",
 }, {
     capabilities: {
         tools: {}
