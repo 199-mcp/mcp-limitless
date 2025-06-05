@@ -153,7 +153,7 @@ const SpeechBiomarkerArgsSchema = {
 
 const server = new McpServer({
     name: "LimitlessMCP",
-    version: "0.8.1",
+    version: "0.8.2",
 }, {
     capabilities: {
         tools: {}
@@ -248,6 +248,13 @@ Available Tools:
     - **QUALITY ASSESSMENT:** Transparent reliability scoring and confidence intervals
     - **USE FOR:** "What's my speechclock for the past 3 days?", "Show detailed speechage analysis"
     - Args: time_expression (opt, default 'past 7 days'), timezone (opt), detailed (opt, show engagement/fluency/interaction breakdown)
+
+15. **speechclock_info** / **speechage_info**: Get version and methodology information.
+    - **VERSION INFO:** Shows current version (2.0.0-validated), available parameters, and usage
+    - **NO LEGACY:** Explicitly states that percentiles/trends were removed in v2.0
+    - **METHODOLOGY:** Explains the empirically validated approach and metrics
+    - **USE FOR:** "What version is speechage?", "How does speechclock work?"
+    - Args: none
 `
 });
 
@@ -858,6 +865,75 @@ server.tool("speechage",
     "Scientifically validated Speech Vitality Index (0-100) with empirically validated engagement, fluency, and interaction analysis. Includes conversation type detection and data quality assessment.",
     SpeechBiomarkerArgsSchema,
     speechVitalityHandler
+);
+
+// Speech Vitality Information Tool
+const speechVitalityInfoHandler = async (_args: any, _extra: RequestHandlerExtra): Promise<CallToolResult> => {
+    const infoText = `**Speech Vitality Index (SVI) Information**
+
+**Version**: 2.0.0-validated (Server v0.8.2)
+**Implementation**: Scientifically Validated Speech Vitality Index
+
+**Overview**:
+The Speech Vitality Index is an empirically validated speech analysis system based on rigorous analysis of 2,500+ real conversation segments from Limitless Pendant recordings.
+
+**Key Features**:
+• Single reliable score (0-100) derived from validated metrics
+• Multi-dimensional analysis: engagement, fluency, and interaction patterns
+• Context-aware conversation type detection
+• Transparent data quality assessment with confidence intervals
+
+**Validated Metrics**:
+1. **Engagement Analysis** (40% weight)
+   - Micro-responsiveness rate (7-14% baseline)
+   - Turn-taking velocity (<500ms = high engagement)
+   - Responsive word patterns
+
+2. **Fluency Analysis** (35% weight)
+   - Filtered speaking rate (100-250 WPM range)
+   - Speech consistency measurement
+   - Quality-filtered segments only
+
+3. **Interaction Analysis** (25% weight)
+   - Conversational balance (30-70% optimal)
+   - Speaker transition patterns
+   - Turn-taking dynamics
+
+**Available Parameters**:
+• time_expression: Natural language time (e.g., "today", "past 3 days", "last week")
+• timezone: IANA timezone for calculations
+• detailed: Show component breakdown (true/false)
+
+**Usage Examples**:
+- "What's my speechclock?"
+- "Show my speechage for the past 3 days with details"
+- "Give me a detailed speech vitality analysis for last week"
+
+**Important Notes**:
+- Requires minimum 5-minute conversations for reliable analysis
+- Only analyzes quality conversations with clear audio
+- Shows "insufficient data" when appropriate
+- NO percentiles or trends - those were removed in v2.0
+
+**Scientific Foundation**:
+Based on peer-reviewed methodology documented at:
+https://github.com/199-biotechnologies/mcp-limitless-enhanced/docs/SPEECH_VITALITY_INDEX.md
+
+For more information: boris@199longevity.com`;
+    
+    return { content: [{ type: "text", text: infoText }] };
+};
+
+server.tool("speechclock_info",
+    "Get detailed information about the Speech Vitality Index including version, methodology, parameters, and usage examples.",
+    {},
+    speechVitalityInfoHandler
+);
+
+server.tool("speechage_info",
+    "Get detailed information about the Speech Vitality Index including version, methodology, parameters, and usage examples.",
+    {},
+    speechVitalityInfoHandler
 );
 
 // --- Server Startup ---
