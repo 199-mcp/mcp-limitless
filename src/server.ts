@@ -25,7 +25,7 @@ import {
     TranscriptOptions,
     DetailedTranscript
 } from "./transcript-extraction.js";
-// Legacy biomarker imports removed - using simplified SVI only
+// Scientifically validated Speech Vitality Index
 import {
     ValidatedSpeechVitalityAnalyzer,
     ValidatedSpeechVitality
@@ -764,7 +764,7 @@ server.tool("limitless_get_detailed_analysis",
     }
 );
 
-// Simplified Speech Vitality Handler
+// Validated Speech Vitality Handler
 const speechVitalityHandler = async (args: any, _extra: RequestHandlerExtra): Promise<CallToolResult> => {
     try {
         const timeExpression = args.time_expression || 'past 7 days';
@@ -847,7 +847,7 @@ const speechVitalityHandler = async (args: any, _extra: RequestHandlerExtra): Pr
     }
 };
 
-// Simplified Speech Vitality Tools
+// Validated Speech Vitality Tools
 server.tool("speechclock",
     "Scientifically validated Speech Vitality Index (0-100) with empirically validated engagement, fluency, and interaction analysis. Includes conversation type detection and data quality assessment.",
     SpeechBiomarkerArgsSchema,
