@@ -52,6 +52,7 @@ const CommonListArgsSchema = {
     includeMarkdown: z.boolean().optional().default(true).describe("Include markdown content in the response."),
     includeHeadings: z.boolean().optional().default(true).describe("Include headings content in the response."),
     direction: z.enum(["asc", "desc"]).optional().describe("Sort order ('asc' for oldest first, 'desc' for newest first)."),
+    isStarred: z.boolean().optional().describe("Filter for starred lifelogs only."),
 };
 const GetByIdArgsSchema = {
     lifelog_id: z.string().describe("The unique identifier of the lifelog to retrieve."),
@@ -72,6 +73,7 @@ const ListRecentArgsSchema = {
     timezone: CommonListArgsSchema.timezone,
     includeMarkdown: CommonListArgsSchema.includeMarkdown,
     includeHeadings: CommonListArgsSchema.includeHeadings,
+    isStarred: CommonListArgsSchema.isStarred,
 };
 const SearchArgsSchema = {
     search_term: z.string().describe("The text to search for within lifelog titles and content."),
@@ -80,6 +82,7 @@ const SearchArgsSchema = {
     timezone: CommonListArgsSchema.timezone,
     includeMarkdown: CommonListArgsSchema.includeMarkdown,
     includeHeadings: CommonListArgsSchema.includeHeadings,
+    isStarred: CommonListArgsSchema.isStarred,
 };
 
 // --- NEW ADVANCED TOOL SCHEMAS ---
@@ -88,6 +91,7 @@ const NaturalTimeArgsSchema = {
     timezone: z.string().optional().describe("IANA timezone for time calculations (defaults to system timezone)."),
     includeMarkdown: z.boolean().optional().default(true).describe("Include markdown content in the response."),
     includeHeadings: z.boolean().optional().default(true).describe("Include headings content in the response."),
+    isStarred: z.boolean().optional().describe("Filter for starred lifelogs only."),
 };
 
 const MeetingDetectionArgsSchema = {
@@ -153,7 +157,7 @@ const SpeechBiomarkerArgsSchema = {
 
 const server = new McpServer({
     name: "LimitlessMCP",
-    version: "0.8.2",
+    version: "0.9.0",
 }, {
     capabilities: {
         tools: {}
@@ -172,26 +176,26 @@ Available Tools:
     - Args: lifelog_id (req), includeMarkdown, includeHeadings
 
 2.  **limitless_list_lifelogs_by_date**: Lists logs/recordings for a specific date. Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.
-    - Args: date (req, YYYY-MM-DD), limit (max ${MAX_LIFELOG_LIMIT}), timezone, includeMarkdown, includeHeadings, direction ('asc'/'desc', default 'asc')
+    - Args: date (req, YYYY-MM-DD), limit (max ${MAX_LIFELOG_LIMIT}), timezone, includeMarkdown, includeHeadings, direction ('asc'/'desc', default 'asc'), isStarred (filter starred only)
 
 3.  **limitless_list_lifelogs_by_range**: Lists logs/recordings within a date/time range. Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.
-    - Args: start (req), end (req), limit (max ${MAX_LIFELOG_LIMIT}), timezone, includeMarkdown, includeHeadings, direction ('asc'/'desc', default 'asc')
+    - Args: start (req), end (req), limit (max ${MAX_LIFELOG_LIMIT}), timezone, includeMarkdown, includeHeadings, direction ('asc'/'desc', default 'asc'), isStarred (filter starred only)
 
 4.  **limitless_list_recent_lifelogs**: Lists the most recent logs/recordings (sorted newest first). Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.
-    - Args: limit (opt, default 10, max ${MAX_LIFELOG_LIMIT}), timezone, includeMarkdown, includeHeadings
+    - Args: limit (opt, default 10, max ${MAX_LIFELOG_LIMIT}), timezone, includeMarkdown, includeHeadings, isStarred (filter starred only)
 
 5.  **limitless_search_lifelogs**: Performs a simple text search for specific keywords/phrases within the title and content of *recent* logs/Pendant recordings.
     - **USE ONLY FOR KEYWORDS:** Good for finding mentions of "Project X", "Company Name", specific names, etc.
     - **DO NOT USE FOR CONCEPTS:** Not suitable for finding general concepts like 'action items', 'summaries', 'key decisions', 'to-dos', or 'main topics'. Use a list tool first for those tasks, then analyze the results.
     - **LIMITATION**: Only searches the 'fetch_limit' most recent logs (default ${DEFAULT_SEARCH_FETCH_LIMIT}, max ${MAX_SEARCH_FETCH_LIMIT}). NOT a full history search.
-    - Args: search_term (req), fetch_limit (opt, default ${DEFAULT_SEARCH_FETCH_LIMIT}, max ${MAX_SEARCH_FETCH_LIMIT}), limit (opt, max ${MAX_LIFELOG_LIMIT} for results), timezone, includeMarkdown, includeHeadings
+    - Args: search_term (req), fetch_limit (opt, default ${DEFAULT_SEARCH_FETCH_LIMIT}, max ${MAX_SEARCH_FETCH_LIMIT}), limit (opt, max ${MAX_LIFELOG_LIMIT} for results), timezone, includeMarkdown, includeHeadings, isStarred (filter starred only)
 
 **ADVANCED INTELLIGENT TOOLS (v0.2.0):**
 
 6.  **limitless_get_by_natural_time**: Get lifelogs using natural language time expressions like 'today', 'yesterday', 'this morning', 'this week', 'last Monday', 'past 3 days', etc.
     - **MOST CONVENIENT:** Use this instead of calculating exact dates manually
     - **EXAMPLES:** "today", "yesterday", "this morning", "this afternoon", "this week", "last week", "past 3 days", "2 hours ago", "last Monday"
-    - Args: time_expression (req), timezone (opt), includeMarkdown, includeHeadings
+    - Args: time_expression (req), timezone (opt), includeMarkdown, includeHeadings, isStarred (filter starred only)
 
 7.  **limitless_detect_meetings**: Automatically detect and extract meetings/conversations from lifelogs with participant analysis and key information.
     - **INTELLIGENT DETECTION:** Identifies meetings based on speaker patterns, duration, and conversation flow
@@ -313,7 +317,7 @@ server.tool( "limitless_list_lifelogs_by_date",
     "Lists logs/recordings for a specific date. Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.",
     ListByDateArgsSchema,
     async (args, _extra) => {
-        const apiOptions: LifelogParams = { date: args.date, limit: args.limit, timezone: args.timezone, includeMarkdown: args.includeMarkdown, includeHeadings: args.includeHeadings, direction: args.direction ?? 'asc' };
+        const apiOptions: LifelogParams = { date: args.date, limit: args.limit, timezone: args.timezone, includeMarkdown: args.includeMarkdown, includeHeadings: args.includeHeadings, direction: args.direction ?? 'asc', isStarred: args.isStarred };
         return handleToolApiCall(() => getLifelogs(limitlessApiKey, apiOptions), args.limit); // Pass requestedLimit to helper
     }
 );
@@ -321,7 +325,7 @@ server.tool( "limitless_list_lifelogs_by_range",
     "Lists logs/recordings within a date/time range. Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.",
     ListByRangeArgsSchema,
     async (args, _extra) => {
-         const apiOptions: LifelogParams = { start: args.start, end: args.end, limit: args.limit, timezone: args.timezone, includeMarkdown: args.includeMarkdown, includeHeadings: args.includeHeadings, direction: args.direction ?? 'asc' };
+         const apiOptions: LifelogParams = { start: args.start, end: args.end, limit: args.limit, timezone: args.timezone, includeMarkdown: args.includeMarkdown, includeHeadings: args.includeHeadings, direction: args.direction ?? 'asc', isStarred: args.isStarred };
         return handleToolApiCall(() => getLifelogs(limitlessApiKey, apiOptions), args.limit); // Pass requestedLimit to helper
     }
 );
@@ -329,7 +333,7 @@ server.tool( "limitless_list_recent_lifelogs",
     "Lists the most recent logs/recordings (sorted newest first). Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.",
     ListRecentArgsSchema,
     async (args, _extra) => {
-         const apiOptions: LifelogParams = { limit: args.limit, timezone: args.timezone, includeMarkdown: args.includeMarkdown, includeHeadings: args.includeHeadings, direction: 'desc' };
+         const apiOptions: LifelogParams = { limit: args.limit, timezone: args.timezone, includeMarkdown: args.includeMarkdown, includeHeadings: args.includeHeadings, direction: 'desc', isStarred: args.isStarred };
         return handleToolApiCall(() => getLifelogs(limitlessApiKey, apiOptions), args.limit); // Pass requestedLimit to helper
     }
 );
@@ -340,7 +344,7 @@ server.tool( "limitless_search_lifelogs",
         const fetchLimit = args.fetch_limit ?? DEFAULT_SEARCH_FETCH_LIMIT;
         console.error(`[Server Tool] Search initiated for term: "${args.search_term}", fetch_limit: ${fetchLimit}`);
         try {
-            const logsToSearch = await getLifelogs(limitlessApiKey, { limit: fetchLimit, direction: 'desc', timezone: args.timezone, includeMarkdown: true, includeHeadings: args.includeHeadings });
+            const logsToSearch = await getLifelogs(limitlessApiKey, { limit: fetchLimit, direction: 'desc', timezone: args.timezone, includeMarkdown: true, includeHeadings: args.includeHeadings, isStarred: args.isStarred });
             if (logsToSearch.length === 0) return { content: [{ type: "text", text: "No recent lifelogs found to search within." }] };
             const searchTermLower = args.search_term.toLowerCase();
             const matchingLogs = logsToSearch.filter(log => log.title?.toLowerCase().includes(searchTermLower) || (log.markdown && log.markdown.toLowerCase().includes(searchTermLower)));
@@ -377,7 +381,8 @@ server.tool("limitless_get_by_natural_time",
                 includeMarkdown: args.includeMarkdown,
                 includeHeadings: args.includeHeadings,
                 limit: 1000, // Allow large fetches for comprehensive results
-                direction: 'asc'
+                direction: 'asc',
+                isStarred: args.isStarred
             };
             
             const logs = await getLifelogs(limitlessApiKey, apiOptions);

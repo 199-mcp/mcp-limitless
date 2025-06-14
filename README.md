@@ -4,6 +4,14 @@
 
 A model context protocol (MCP) server that provides scientifically validated analysis of conversational speech patterns from Limitless Pendant recordings. Unlike speculative biomarker approaches, this implementation focuses exclusively on empirically validated metrics derived from real-world transcription data analysis.
 
+### What's New in v0.9.0
+
+- **Starred Lifelog Support**: Filter and identify important conversations marked with stars
+- **Enhanced Error Messages**: More specific error handling with detailed context
+- **Improved Timezone Handling**: Robust fallback mechanism for timezone detection
+- **Updated Timestamps**: Track when lifelogs were last modified with `updatedAt` field
+- **Full API Parity**: Now supports 100% of official Limitless API parameters
+
 ## Key Features
 
 - **Validated Speech Metrics**: Based on empirical analysis of 2,500+ conversation segments
@@ -100,6 +108,8 @@ Get your scientifically validated Speech Vitality Index.
 - `timezone` (optional): IANA timezone for calculations
 - `detailed` (optional): Show detailed component breakdown
 
+**Note**: All lifelog tools now support `isStarred` parameter to filter only starred conversations.
+
 **Example:**
 ```
 What's my speechclock for today?
@@ -135,6 +145,23 @@ Duration: 23.4 minutes
 ### Core Types
 
 ```typescript
+interface Lifelog {
+  id: string;
+  title?: string;
+  markdown?: string;
+  startTime: string;
+  endTime: string;
+  contents?: LifelogContentNode[];
+  isStarred?: boolean;  // NEW: Whether this lifelog is starred
+  updatedAt?: string;   // NEW: When this lifelog was last updated
+}
+
+interface LifelogParams {
+  // ... existing params ...
+  isStarred?: boolean;  // NEW: Filter for starred lifelogs only
+  batch_size?: number;  // NEW: Configurable batch size for performance tuning
+}
+
 interface ValidatedSpeechVitality {
   // Validated metric categories
   engagement: EngagementMetrics;

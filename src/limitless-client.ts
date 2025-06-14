@@ -14,6 +14,7 @@ export interface LifelogParams {
     timezone?: string;
     direction?: "asc" | "desc";
     cursor?: string;
+    isStarred?: boolean; // Filter for starred lifelogs only
 }
 
 // Define LifelogContentNode - ADD export keyword
@@ -38,6 +39,8 @@ export interface Lifelog {
     startTime: string;
     endTime: string;
     contents?: LifelogContentNode[]; // Use specific type
+    isStarred?: boolean; // Whether this lifelog is starred
+    updatedAt?: string; // When this lifelog was last updated
     // Add other fields from the API response as needed
 }
 
@@ -67,15 +70,45 @@ export class LimitlessApiError extends Error {
     }
 }
 
-// Helper to get the system's default IANA timezone name
+// Helper to get the system's default IANA timezone name with fallback
 function getDefaultTimezone(): string | undefined {
     try {
-        return Intl.DateTimeFormat().resolvedOptions().timeZone;
+        // Primary method: Intl API
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz && tz !== 'UTC') {
+            return tz;
+        }
     } catch (e) {
-        // Cannot log here reliably for stdio
-        // console.error("Could not determine default system timezone:", e);
-        return undefined;
+        // Intl API failed, continue to fallback
     }
+    
+    try {
+        // Fallback: Use Date().toString() parsing (less reliable but better than nothing)
+        const dateStr = new Date().toString();
+        const tzMatch = dateStr.match(/\(([^)]+)\)$/);
+        if (tzMatch) {
+            // Common timezone abbreviations to IANA mapping
+            const abbrevMap: Record<string, string> = {
+                'EST': 'America/New_York',
+                'EDT': 'America/New_York',
+                'CST': 'America/Chicago',
+                'CDT': 'America/Chicago',
+                'MST': 'America/Denver',
+                'MDT': 'America/Denver',
+                'PST': 'America/Los_Angeles',
+                'PDT': 'America/Los_Angeles',
+                'GMT': 'Europe/London',
+                'BST': 'Europe/London',
+            };
+            const abbrev = tzMatch[1].split(' ').map(w => w[0]).join('');
+            return abbrevMap[abbrev] || undefined;
+        }
+    } catch (e) {
+        // Fallback failed too
+    }
+    
+    // If all else fails, return undefined (API will use its default)
+    return undefined;
 }
 
 
@@ -117,9 +150,27 @@ async function makeApiRequest<T>(apiKey: string, endpoint: string, params: Recor
             const errorText = await response.text();
             let errorBody: any;
             try { errorBody = JSON.parse(errorText); } catch (e) { errorBody = errorText; }
-            // Cannot log here reliably for stdio
-            // console.error(`[Limitless Client] Error Response ${response.status} from ${requestUrl}:`, errorBody);
-            throw new LimitlessApiError(`Limitless API Error: ${response.status} ${response.statusText}`, response.status, errorBody);
+            
+            // Provide more specific error messages based on status code
+            let errorMessage = `Limitless API Error: ${response.status} ${response.statusText}`;
+            if (response.status === 401) {
+                errorMessage = "Authentication failed: Invalid or missing API key";
+            } else if (response.status === 404) {
+                errorMessage = endpoint.includes('/v1/lifelogs/') 
+                    ? `Lifelog not found with ID: ${endpoint.split('/').pop()}`
+                    : "Resource not found";
+            } else if (response.status === 429) {
+                errorMessage = "Rate limit exceeded: Too many requests";
+            } else if (response.status >= 500) {
+                errorMessage = `Server error (${response.status}): Limitless API is experiencing issues`;
+            }
+            
+            // Include request details for debugging
+            if (errorBody && typeof errorBody === 'object' && errorBody.message) {
+                errorMessage += ` - ${errorBody.message}`;
+            }
+            
+            throw new LimitlessApiError(errorMessage, response.status, errorBody);
         }
 
         // Only parse JSON if response is ok
@@ -142,7 +193,7 @@ export async function getLifelogs(apiKey: string, options: LifelogParams = {}): 
     const allLifelogs: Lifelog[] = [];
     let currentCursor = options.cursor;
     const limit = options.limit;
-    const batchSize = 10;
+    const batchSize = options.batch_size || 10; // Now configurable with default
     const defaultTimezone = getDefaultTimezone();
 
     const originalOptions = {
@@ -153,6 +204,7 @@ export async function getLifelogs(apiKey: string, options: LifelogParams = {}): 
         end: options.end,
         direction: options.direction ?? 'desc',
         timezone: options.timezone ?? defaultTimezone,
+        isStarred: options.isStarred,
     };
 
     // Cannot log here reliably for stdio
@@ -176,8 +228,10 @@ export async function getLifelogs(apiKey: string, options: LifelogParams = {}): 
             direction: originalOptions.direction,
             timezone: originalOptions.timezone,
             cursor: currentCursor,
+            isStarred: originalOptions.isStarred,
         };
         if (!params.timezone) delete params.timezone;
+        if (params.isStarred === undefined) delete params.isStarred;
 
         // Cannot log here reliably for stdio
         // console.error(`[Limitless Client] Fetching page ${page} ...`);
