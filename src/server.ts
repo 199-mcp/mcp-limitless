@@ -939,10 +939,41 @@ server.tool("speechage_info",
 // --- Server Startup ---
 
 async function main() {
+    // Detect if running in terminal (common mistake)
+    if (process.stdin.isTTY) {
+        console.error("╔════════════════════════════════════════════════════════════════╗");
+        console.error("║                    MCP Server Warning                          ║");
+        console.error("╠════════════════════════════════════════════════════════════════╣");
+        console.error("║ This server expects JSON-RPC input via stdin.                 ║");
+        console.error("║ It is designed to be used with Claude Desktop or MCP clients. ║");
+        console.error("║                                                                ║");
+        console.error("║ ❌ NOT for direct terminal use                                ║");
+        console.error("║ ❌ NOT an HTTP server (no curl/browser access)                ║");
+        console.error("║ ❌ NOT accessible via ngrok or web tunnels                    ║");
+        console.error("║                                                                ║");
+        console.error("║ ✅ Configure in Claude Desktop: Settings → MCP                ║");
+        console.error("║ ✅ Use with MCP-compatible clients                            ║");
+        console.error("║                                                                ║");
+        console.error("║ See README.md for proper configuration instructions.           ║");
+        console.error("╚════════════════════════════════════════════════════════════════╝");
+        console.error("");
+        console.error("Waiting for JSON-RPC input on stdin...");
+    }
+
     const transport = new StdioServerTransport();
     console.error("Limitless MCP Server starting...");
     server.server.onclose = () => { console.error("Connection closed."); };
-    server.server.onerror = (error: Error) => { console.error("MCP Server Error:", error); };
+    server.server.onerror = (error: Error) => { 
+        // Enhanced error messages for common mistakes
+        if (error.message.includes("Unexpected end of JSON input") || 
+            error.message.includes("Unexpected token")) {
+            console.error("MCP Server Error: Invalid JSON-RPC input received.");
+            console.error("This often happens when HTTP requests are sent to the server.");
+            console.error("Remember: This is NOT an HTTP server. Use Claude Desktop or an MCP client.");
+        } else {
+            console.error("MCP Server Error:", error);
+        }
+    };
     server.server.oninitialized = () => { console.error("Client initialized."); };
     try {
         await server.server.connect(transport);

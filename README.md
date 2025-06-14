@@ -242,6 +242,54 @@ GitHub: 199-biotechnologies/mcp-limitless-enhanced
 
 MIT License - see LICENSE file for details.
 
+## Troubleshooting
+
+### Common Issues
+
+#### "Claude hit max length" message
+This message comes from Claude Desktop's UI when responses are too long or the conversation context is filling up. It's NOT related to:
+- The MCP server functionality
+- Your Claude account tier (free/paid)
+- Limitless API limits
+
+**Solution**: Start a new conversation or ask for shorter responses.
+
+#### Server crashes with "Unexpected end of JSON input"
+This happens when non-JSON data is sent to the server. MCP servers use JSON-RPC over stdio, not HTTP.
+
+**Common mistake**: Trying to connect with HTTP clients, browsers, or curl.
+**Solution**: Use Claude Desktop or a proper MCP client.
+
+#### Cannot connect via HTTP/Browser/ngrok
+MCP servers are NOT HTTP servers. They communicate via JSON-RPC over stdin/stdout.
+
+**Wrong**: `curl http://localhost:8008`
+**Right**: Configure in Claude Desktop's MCP settings
+
+#### No data returned from queries
+As of March 2025, the Limitless API primarily surfaces data from the Limitless Pendant. Ensure:
+- Your Pendant is actively recording
+- You have recent conversation data
+- Your API key has proper permissions
+
+### Understanding MCP Servers
+
+**What MCP servers ARE:**
+- JSON-RPC services that communicate over stdio
+- Designed for Claude Desktop and MCP-compatible clients
+- Tools that extend AI assistant capabilities
+
+**What MCP servers are NOT:**
+- HTTP/REST APIs
+- Web servers
+- Browser-accessible services
+- Standalone applications with UIs
+
+If you need HTTP access to Limitless data:
+1. Use the Limitless API directly
+2. Create a separate HTTP wrapper service
+3. Use the official Limitless web interface
+
 ## Support
 
 - **Issues**: [GitHub Issues](https://github.com/199-biotechnologies/mcp-limitless-enhanced/issues)
