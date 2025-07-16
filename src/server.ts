@@ -2,7 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { McpError, ErrorCode, CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { getLifelogs, getLifelogById, LimitlessApiError, Lifelog, LifelogParams } from "./limitless-client.js";
+import { getLifelogs, getLifelogById, getLifelogsWithPagination, LifelogsWithPagination, LimitlessApiError, Lifelog, LifelogParams } from "./limitless-client.js";
 import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import { z } from "zod";
 import { 
@@ -32,9 +32,11 @@ import {
 } from "./speech-vitality-index.js";
 
 // --- Constants ---
-const MAX_LIFELOG_LIMIT = 100;
-const MAX_SEARCH_FETCH_LIMIT = 100;
-const DEFAULT_SEARCH_FETCH_LIMIT = 20;
+const MAX_API_LIMIT = 10; // Limitless API maximum per request
+const MAX_TOTAL_FETCH_LIMIT = 100; // Maximum total items to fetch across pages
+const DEFAULT_FETCH_LIMIT = 10;
+const MAX_RESPONSE_TOKENS = 20000; // Leave 5k buffer below 25k limit
+const TOKEN_ESTIMATION_RATIO = 0.25; // Rough estimate: 1 token per 4 characters
 
 // --- Environment Variable Checks ---
 const limitlessApiKey = process.env.LIMITLESS_API_KEY;
@@ -44,10 +46,113 @@ if (!limitlessApiKey) {
     process.exit(1);
 }
 
+// --- Token Estimation Utilities ---
+
+/**
+ * Estimate token count from text (rough approximation)
+ */
+function estimateTokens(text: string): number {
+    return Math.ceil(text.length * TOKEN_ESTIMATION_RATIO);
+}
+
+/**
+ * Truncate response if it exceeds token limits
+ */
+function truncateResponse(content: any, maxTokens: number = MAX_RESPONSE_TOKENS): { content: any; truncated: boolean; tokenCount: number } {
+    const jsonString = JSON.stringify(content, null, 2);
+    const estimatedTokens = estimateTokens(jsonString);
+    
+    if (estimatedTokens <= maxTokens) {
+        return { content, truncated: false, tokenCount: estimatedTokens };
+    }
+    
+    // Calculate how much to truncate
+    const maxChars = Math.floor(maxTokens / TOKEN_ESTIMATION_RATIO);
+    const truncatedJson = jsonString.substring(0, maxChars - 200); // Leave room for truncation message
+    
+    let truncatedContent;
+    try {
+        // Try to parse the truncated JSON
+        truncatedContent = JSON.parse(truncatedJson + '}');
+    } catch {
+        // If JSON is invalid, return a summary instead
+        if (Array.isArray(content)) {
+            const itemCount = content.length;
+            const sampleItems = content.slice(0, 3);
+            truncatedContent = {
+                summary: `Response truncated due to size. Showing 3 of ${itemCount} items.`,
+                sample_items: sampleItems,
+                total_items: itemCount,
+                suggestion: "Use smaller time ranges, add limit parameter, or use pagination with cursor for more data."
+            };
+        } else {
+            truncatedContent = {
+                summary: "Response truncated due to size.",
+                partial_data: truncatedJson.substring(0, Math.min(1000, truncatedJson.length)),
+                suggestion: "Use more specific queries or pagination to get complete data."
+            };
+        }
+    }
+    
+    return { 
+        content: truncatedContent, 
+        truncated: true, 
+        tokenCount: estimateTokens(JSON.stringify(truncatedContent, null, 2))
+    };
+}
+
+/**
+ * Validate API constraints before making requests
+ */
+function validateApiConstraints(args: any): { valid: boolean; error?: string } {
+    // Check limit constraint
+    if (args.limit && args.limit > MAX_API_LIMIT) {
+        return {
+            valid: false,
+            error: `❌ **LIMIT ERROR**: limit=${args.limit} exceeds API maximum of ${MAX_API_LIMIT}. Use cursor for pagination instead.`
+        };
+    }
+    
+    // Check date format if provided
+    if (args.date && !/^\d{4}-\d{2}-\d{2}$/.test(args.date)) {
+        return {
+            valid: false,
+            error: `❌ **DATE FORMAT ERROR**: date='${args.date}' must be YYYY-MM-DD format. Example: '2025-07-14'.`
+        };
+    }
+    
+    return { valid: true };
+}
+
+/**
+ * Create a safe response with token limit handling and pagination info
+ */
+function createSafeResponse(data: any, description: string = "Result", paginationInfo?: { nextCursor?: string; hasMore?: boolean; totalFetched?: number }): CallToolResult {
+    const { content, truncated, tokenCount } = truncateResponse(data);
+    
+    let resultText = `${description}:\n\n${JSON.stringify(content, null, 2)}`;
+    
+    if (paginationInfo?.nextCursor) {
+        resultText += `\n\n📄 **Pagination Available**: Use cursor="${paginationInfo.nextCursor}" to fetch next page.`;
+        if (paginationInfo.totalFetched) {
+            resultText += ` (Showing ${Array.isArray(data) ? data.length : 'N/A'} items, ${paginationInfo.totalFetched} total fetched)`;
+        }
+    } else if (paginationInfo?.hasMore === false) {
+        resultText += `\n\n✅ **End of Results**: No more data available.`;
+    }
+    
+    if (truncated) {
+        resultText += `\n\n⚠️ **Response Truncated**: Reduced from ~${Math.ceil(estimateTokens(JSON.stringify(data, null, 2)) / 1000)}k to ~${Math.ceil(tokenCount / 1000)}k tokens. Use smaller limit, cursor pagination, or more specific queries.`;
+    }
+    
+    return { content: [{ type: "text", text: resultText }] };
+}
+
 // --- Tool Argument Schemas ---
 
 const CommonListArgsSchema = {
-    limit: z.number().int().positive().max(MAX_LIFELOG_LIMIT).optional().describe(`Maximum number of lifelogs to return (Max: ${MAX_LIFELOG_LIMIT}). Fetches in batches from the API if needed.`),
+    limit: z.number().int().positive().max(MAX_API_LIMIT).optional().default(MAX_API_LIMIT).describe(`Maximum number of lifelogs to return per request (Max: ${MAX_API_LIMIT} per API constraint). Use cursor for pagination.`),
+    cursor: z.string().optional().describe("Pagination cursor from previous response. Use to fetch next page of results."),
     timezone: z.string().optional().describe("IANA timezone for date/time parameters (defaults to server's local timezone)."),
     includeMarkdown: z.boolean().optional().default(true).describe("Include markdown content in the response."),
     includeHeadings: z.boolean().optional().default(true).describe("Include headings content in the response."),
@@ -69,7 +174,8 @@ const ListByRangeArgsSchema = {
     ...CommonListArgsSchema
 };
 const ListRecentArgsSchema = {
-    limit: z.number().int().positive().max(MAX_LIFELOG_LIMIT).optional().default(10).describe(`Number of recent lifelogs to retrieve (Max: ${MAX_LIFELOG_LIMIT}). Defaults to 10.`),
+    limit: z.number().int().positive().max(MAX_API_LIMIT).optional().default(MAX_API_LIMIT).describe(`Number of recent lifelogs to retrieve (Max: ${MAX_API_LIMIT} per API constraint). Use cursor for more.`),
+    cursor: z.string().optional().describe("Pagination cursor from previous response. Use to fetch next page of results."),
     timezone: CommonListArgsSchema.timezone,
     includeMarkdown: CommonListArgsSchema.includeMarkdown,
     includeHeadings: CommonListArgsSchema.includeHeadings,
@@ -77,7 +183,7 @@ const ListRecentArgsSchema = {
 };
 const SearchArgsSchema = {
     search_term: z.string().describe("The text to search for within lifelog titles and content."),
-    fetch_limit: z.number().int().positive().max(MAX_SEARCH_FETCH_LIMIT).optional().default(DEFAULT_SEARCH_FETCH_LIMIT).describe(`How many *recent* lifelogs to fetch from the API to search within (Default: ${DEFAULT_SEARCH_FETCH_LIMIT}, Max: ${MAX_SEARCH_FETCH_LIMIT}). This defines the scope of the search, NOT the number of results returned.`),
+    fetch_limit: z.number().int().positive().max(MAX_TOTAL_FETCH_LIMIT).optional().default(20).describe(`How many *recent* lifelogs to fetch from the API to search within (Default: 20, Max: ${MAX_TOTAL_FETCH_LIMIT}). This defines the scope of the search, NOT the number of results returned.`),
     limit: CommonListArgsSchema.limit,
     timezone: CommonListArgsSchema.timezone,
     includeMarkdown: CommonListArgsSchema.includeMarkdown,
@@ -88,6 +194,8 @@ const SearchArgsSchema = {
 // --- NEW ADVANCED TOOL SCHEMAS ---
 const NaturalTimeArgsSchema = {
     time_expression: z.string().describe("Natural language time expression like 'today', 'yesterday', 'this morning', 'this week', 'last Monday', 'past 3 days', '2 hours ago', etc."),
+    limit: z.number().int().positive().max(MAX_API_LIMIT).optional().default(MAX_API_LIMIT).describe(`Maximum number of lifelogs to return per request (Max: ${MAX_API_LIMIT} per API constraint). Use cursor for pagination.`),
+    cursor: z.string().optional().describe("Pagination cursor from previous response. Use to fetch next page of results."),
     timezone: z.string().optional().describe("IANA timezone for time calculations (defaults to system timezone)."),
     includeMarkdown: z.boolean().optional().default(true).describe("Include markdown content in the response."),
     includeHeadings: z.boolean().optional().default(true).describe("Include headings content in the response."),
@@ -163,12 +271,24 @@ const server = new McpServer({
         tools: {}
     },
     instructions: `
-This server connects to the Limitless API (https://limitless.ai) to interact with your lifelogs using specific tools.
-NOTE: As of March 2025, the Limitless Lifelog API primarily surfaces data recorded via the Limitless Pendant. Queries may return limited or no data if the Pendant is not used.
+⚡ LIMITLESS MCP SERVER - AI Agent Optimized ⚡
 
-**Tool Usage Strategy:**
-- To find conceptual information like **summaries, action items, to-dos, key topics, decisions, etc.**, first use a **list tool** (list_by_date, list_by_range, list_recent) to retrieve the relevant log entries. Then, **analyze the returned text content** to extract the required information.
-- Use the **search tool** (\`limitless_search_lifelogs\`) **ONLY** when looking for logs containing **specific keywords or exact phrases**.
+🔧 **CRITICAL CONSTRAINTS:**
+- API LIMIT: Max 10 items per request
+- TOKEN LIMIT: Responses auto-truncated at 20k tokens
+- PAGINATION: Always use cursor for more data
+- TIME FORMAT: Use supported expressions only
+
+📋 **USAGE RULES FOR AI AGENTS:**
+1. ALWAYS set limit ≤ 10 to avoid API errors
+2. USE cursor parameter for pagination 
+3. PREFER natural_time over exact dates
+4. CHECK response for pagination info
+5. EXPECT auto-truncation on large responses
+
+⏰ **SUPPORTED TIME EXPRESSIONS:**
+✅ 'today', 'yesterday', 'this week', 'last Monday', 'past 3 days'
+❌ 'Monday July 14' → Use 'July 14 2025' instead
 
 Available Tools:
 
@@ -176,19 +296,19 @@ Available Tools:
     - Args: lifelog_id (req), includeMarkdown, includeHeadings
 
 2.  **limitless_list_lifelogs_by_date**: Lists logs/recordings for a specific date. Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.
-    - Args: date (req, YYYY-MM-DD), limit (max ${MAX_LIFELOG_LIMIT}), timezone, includeMarkdown, includeHeadings, direction ('asc'/'desc', default 'asc'), isStarred (filter starred only)
+    - Args: date (req, YYYY-MM-DD), limit (max ${MAX_API_LIMIT}), cursor, timezone, includeMarkdown, includeHeadings, direction ('asc'/'desc', default 'asc'), isStarred (filter starred only)
 
 3.  **limitless_list_lifelogs_by_range**: Lists logs/recordings within a date/time range. Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.
-    - Args: start (req), end (req), limit (max ${MAX_LIFELOG_LIMIT}), timezone, includeMarkdown, includeHeadings, direction ('asc'/'desc', default 'asc'), isStarred (filter starred only)
+    - Args: start (req), end (req), limit (max ${MAX_API_LIMIT}), cursor, timezone, includeMarkdown, includeHeadings, direction ('asc'/'desc', default 'asc'), isStarred (filter starred only)
 
 4.  **limitless_list_recent_lifelogs**: Lists the most recent logs/recordings (sorted newest first). Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.
-    - Args: limit (opt, default 10, max ${MAX_LIFELOG_LIMIT}), timezone, includeMarkdown, includeHeadings, isStarred (filter starred only)
+    - Args: limit (opt, default ${MAX_API_LIMIT}, max ${MAX_API_LIMIT}), cursor, timezone, includeMarkdown, includeHeadings, isStarred (filter starred only)
 
 5.  **limitless_search_lifelogs**: Performs a simple text search for specific keywords/phrases within the title and content of *recent* logs/Pendant recordings.
     - **USE ONLY FOR KEYWORDS:** Good for finding mentions of "Project X", "Company Name", specific names, etc.
     - **DO NOT USE FOR CONCEPTS:** Not suitable for finding general concepts like 'action items', 'summaries', 'key decisions', 'to-dos', or 'main topics'. Use a list tool first for those tasks, then analyze the results.
-    - **LIMITATION**: Only searches the 'fetch_limit' most recent logs (default ${DEFAULT_SEARCH_FETCH_LIMIT}, max ${MAX_SEARCH_FETCH_LIMIT}). NOT a full history search.
-    - Args: search_term (req), fetch_limit (opt, default ${DEFAULT_SEARCH_FETCH_LIMIT}, max ${MAX_SEARCH_FETCH_LIMIT}), limit (opt, max ${MAX_LIFELOG_LIMIT} for results), timezone, includeMarkdown, includeHeadings, isStarred (filter starred only)
+    - **LIMITATION**: Only searches the 'fetch_limit' most recent logs (default 20, max ${MAX_TOTAL_FETCH_LIMIT}). NOT a full history search.
+    - Args: search_term (req), fetch_limit (opt, default 20, max ${MAX_TOTAL_FETCH_LIMIT}), limit (opt, max ${MAX_API_LIMIT} for results), timezone, includeMarkdown, includeHeadings, isStarred (filter starred only)
 
 **ADVANCED INTELLIGENT TOOLS (v0.2.0):**
 
@@ -341,7 +461,7 @@ server.tool( "limitless_search_lifelogs",
     "Performs a simple text search for specific keywords/phrases within the title and content of *recent* logs/Pendant recordings. Use ONLY for keywords, NOT for concepts like 'action items' or 'summaries'. Searches only recent logs (limited scope).",
     SearchArgsSchema,
     async (args, _extra) => {
-        const fetchLimit = args.fetch_limit ?? DEFAULT_SEARCH_FETCH_LIMIT;
+        const fetchLimit = args.fetch_limit ?? 20;
         console.error(`[Server Tool] Search initiated for term: "${args.search_term}", fetch_limit: ${fetchLimit}`);
         try {
             const logsToSearch = await getLifelogs(limitlessApiKey, { limit: fetchLimit, direction: 'desc', timezone: args.timezone, includeMarkdown: true, includeHeadings: args.includeHeadings, isStarred: args.isStarred });
@@ -367,10 +487,16 @@ server.tool( "limitless_search_lifelogs",
 
 // Natural Time Tool
 server.tool("limitless_get_by_natural_time",
-    "Get lifelogs using natural language time expressions like 'today', 'yesterday', 'this morning', 'this week', 'last Monday', 'past 3 days', etc. Most convenient way to query without calculating exact dates.",
+    "Get lifelogs using natural time expressions. SUPPORTED: 'today', 'yesterday', 'this week', 'last Monday', 'past 3 days', '2 hours ago'. CONSTRAINTS: limit max 10 per request, use cursor for more. EXAMPLES: time_expression='yesterday', limit=5. NOT SUPPORTED: 'Monday July 14' (use 'July 14 2025' instead).",
     NaturalTimeArgsSchema,
     async (args, _extra) => {
         try {
+            // Validate constraints
+            const validation = validateApiConstraints(args);
+            if (!validation.valid) {
+                return { content: [{ type: "text", text: validation.error! }], isError: true };
+            }
+            
             const parser = new NaturalTimeParser({ timezone: args.timezone });
             const timeRange = parser.parseTimeExpression(args.time_expression);
             
@@ -380,21 +506,36 @@ server.tool("limitless_get_by_natural_time",
                 timezone: timeRange.timezone,
                 includeMarkdown: args.includeMarkdown,
                 includeHeadings: args.includeHeadings,
-                limit: 1000, // Allow large fetches for comprehensive results
+                limit: args.limit || MAX_API_LIMIT,
                 direction: 'asc',
-                isStarred: args.isStarred
+                isStarred: args.isStarred,
+                cursor: args.cursor
             };
             
-            const logs = await getLifelogs(limitlessApiKey, apiOptions);
+            const result = await getLifelogsWithPagination(limitlessApiKey, apiOptions);
             
-            const resultText = logs.length === 0 
-                ? `No lifelogs found for "${args.time_expression}".`
-                : `Found ${logs.length} lifelog(s) for "${args.time_expression}" (${timeRange.start} to ${timeRange.end}):\n\n${JSON.stringify(logs, null, 2)}`;
-                
-            return { content: [{ type: "text", text: resultText }] };
+            if (result.lifelogs.length === 0) {
+                return { content: [{ type: "text", text: `No lifelogs found for "${args.time_expression}".` }] };
+            }
+            
+            return createSafeResponse(
+                result.lifelogs, 
+                `Found ${result.lifelogs.length} lifelog(s) for "${args.time_expression}" (${timeRange.start} to ${timeRange.end})`,
+                {
+                    nextCursor: result.pagination.nextCursor,
+                    hasMore: result.pagination.hasMore,
+                    totalFetched: result.pagination.count
+                }
+            );
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
-            return { content: [{ type: "text", text: `Error parsing time expression: ${errorMessage}` }], isError: true };
+            
+            // Enhanced error message for time parsing
+            if (errorMessage.includes('Unsupported time expression')) {
+                return { content: [{ type: "text", text: `🕒 **TIME EXPRESSION ERROR**: ${errorMessage}\n\n💡 **Quick Fixes:**\n- Try 'today', 'yesterday', 'this week' instead\n- For specific dates: Use 'July 14 2025' not 'Monday July 14'\n- Use relative terms: 'past 3 days', 'last Monday'` }], isError: true };
+            }
+            
+            return { content: [{ type: "text", text: `❌ **API ERROR**: ${errorMessage}` }], isError: true };
         }
     }
 );
@@ -479,10 +620,16 @@ server.tool("limitless_search_conversations_about",
 
 // Daily Summary Tool
 server.tool("limitless_get_daily_summary",
-    "Generate comprehensive daily summary with meetings, action items, key participants, topics, and productivity insights. Perfect for end-of-day reviews or daily planning.",
+    "Generate daily summary with auto-truncation for token limits. INCLUDES: meetings, action items, participants, topics. CONSTRAINTS: Large responses auto-truncated, use smaller date ranges if needed. ARGS: date (YYYY-MM-DD format, defaults today), timezone (optional). EXAMPLE: date='2025-07-14'.",
     DailySummaryArgsSchema,
     async (args, _extra) => {
         try {
+            // Validate constraints
+            const validation = validateApiConstraints(args);
+            if (!validation.valid) {
+                return { content: [{ type: "text", text: validation.error! }], isError: true };
+            }
+            
             const date = args.date || new Date().toISOString().split('T')[0];
             const summary = await DailySummaryGenerator.generateDailySummary(
                 limitlessApiKey,
@@ -490,8 +637,7 @@ server.tool("limitless_get_daily_summary",
                 args.timezone
             );
             
-            const resultText = `Daily summary for ${date}:\n\n${JSON.stringify(summary, null, 2)}`;
-            return { content: [{ type: "text", text: resultText }] };
+            return createSafeResponse(summary, `Daily summary for ${date}`);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             return { content: [{ type: "text", text: `Error generating daily summary: ${errorMessage}` }], isError: true };

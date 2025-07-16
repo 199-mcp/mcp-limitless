@@ -347,7 +347,25 @@ export class NaturalTimeParser {
                 const futureMatch = this.parseFutureExpression(normalized, currentDate);
                 if (futureMatch) return futureMatch;
                 
-                throw new Error(`Unsupported time expression: "${expression}". Supported: today, yesterday, tomorrow, this/last/next week/month/year, weekends, mornings/afternoons/evenings, quarters, relative expressions (N days ago, past N days), and more. See documentation for full list.`);
+                // Try to parse specific date formats like "Monday July 14"
+                const specificDateMatch = this.parseSpecificDateFormat(normalized, currentDate);
+                if (specificDateMatch) return specificDateMatch;
+                
+                const supportedExpressions = [
+                    'today', 'yesterday', 'tomorrow',
+                    'this morning', 'this afternoon', 'this evening', 'tonight',
+                    'yesterday morning', 'yesterday afternoon', 'yesterday evening', 'last night',
+                    'this week', 'last week', 'next week',
+                    'this weekend', 'last weekend', 'next weekend',
+                    'this month', 'last month', 'next month',
+                    'this quarter', 'last quarter', 'q1', 'q2', 'q3', 'q4',
+                    'past 3 days', 'past week', 'past month',
+                    'last monday', 'next friday', 'tuesday',
+                    '2 days ago', '3 hours ago', 'in 2 days',
+                    'recently', 'the other day', 'a few days ago'
+                ];
+                
+                throw new Error(`Unsupported time expression: "${expression}". Supported expressions (${supportedExpressions.length} total): ${supportedExpressions.join(', ')}. For specific dates, use formats like 'July 14 2025' or '2025-07-14' instead of 'Monday July 14'.`);
         }
     }
 
@@ -624,6 +642,65 @@ export class NaturalTimeParser {
         }
         
         return null;
+    }
+
+    private parseSpecificDateFormat(expression: string, currentDate: Date): TimeRange | null {
+        // Parse formats like "Monday July 14", "July 14", "July 14 2025"
+        const monthNames = [
+            'january', 'february', 'march', 'april', 'may', 'june',
+            'july', 'august', 'september', 'october', 'november', 'december'
+        ];
+        
+        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        
+        // Pattern: [DayName] MonthName Day [Year]
+        const specificDatePattern = /^(?:(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\s+)?(\w+)\s+(\d{1,2})(?:\s+(\d{4}))?$/;
+        const match = expression.match(specificDatePattern);
+        
+        if (!match) {
+            // Also try ISO date format YYYY-MM-DD
+            const isoPattern = /^(\d{4})-(\d{2})-(\d{2})$/;
+            const isoMatch = expression.match(isoPattern);
+            if (isoMatch) {
+                const year = parseInt(isoMatch[1]);
+                const month = parseInt(isoMatch[2]) - 1; // JS months are 0-indexed
+                const day = parseInt(isoMatch[3]);
+                const targetDate = new Date(year, month, day);
+                if (!isNaN(targetDate.getTime())) {
+                    return this.getDayRange(targetDate);
+                }
+            }
+            return null;
+        }
+        
+        const dayName = match[1]; // optional
+        const monthName = match[2].toLowerCase();
+        const dayNumber = parseInt(match[3]);
+        const year = match[4] ? parseInt(match[4]) : currentDate.getFullYear();
+        
+        // Find month index
+        const monthIndex = monthNames.indexOf(monthName);
+        if (monthIndex === -1) return null;
+        
+        // Create the target date
+        const targetDate = new Date(year, monthIndex, dayNumber);
+        
+        // Validate the date is valid
+        if (isNaN(targetDate.getTime()) || 
+            targetDate.getMonth() !== monthIndex || 
+            targetDate.getDate() !== dayNumber) {
+            return null;
+        }
+        
+        // If a day name was specified, verify it matches
+        if (dayName) {
+            const expectedDayIndex = dayNames.indexOf(dayName);
+            if (expectedDayIndex !== -1 && targetDate.getDay() !== expectedDayIndex) {
+                return null; // Day name doesn't match the actual date
+            }
+        }
+        
+        return this.getDayRange(targetDate);
     }
 
     private formatDateTime(date: Date): string {

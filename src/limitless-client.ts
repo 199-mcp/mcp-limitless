@@ -252,6 +252,55 @@ export async function getLifelogs(apiKey: string, options: LifelogParams = {}): 
     return limit !== undefined ? allLifelogs.slice(0, limit) : allLifelogs;
 }
 
+export interface LifelogsWithPagination {
+    lifelogs: Lifelog[];
+    pagination: {
+        nextCursor?: string;
+        hasMore: boolean;
+        count: number;
+    };
+}
+
+/**
+ * Get lifelogs with pagination metadata - for MCP tools that need cursor info
+ */
+export async function getLifelogsWithPagination(apiKey: string, options: LifelogParams = {}): Promise<LifelogsWithPagination> {
+    const defaultTimezone = getDefaultTimezone();
+    const batchSize = options.limit || 10; // Use requested limit as batch size
+
+    const params: Record<string, string | number | boolean | undefined> = {
+        limit: batchSize,
+        includeMarkdown: options.includeMarkdown ?? true,
+        includeHeadings: options.includeHeadings ?? true,
+        date: options.date,
+        start: options.start,
+        end: options.end,
+        direction: options.direction ?? 'desc',
+        timezone: options.timezone ?? defaultTimezone,
+        cursor: options.cursor,
+        isStarred: options.isStarred,
+    };
+
+    // Clean up undefined values
+    Object.keys(params).forEach(key => {
+        if (params[key] === undefined) delete params[key];
+    });
+
+    const response = await makeApiRequest<LifelogsResponse>(apiKey, "v1/lifelogs", params);
+    const lifelogs = response.data?.lifelogs ?? [];
+    const nextCursor = response.meta?.lifelogs?.nextCursor;
+    const count = response.meta?.lifelogs?.count ?? lifelogs.length;
+
+    return {
+        lifelogs,
+        pagination: {
+            nextCursor,
+            hasMore: !!nextCursor,
+            count
+        }
+    };
+}
+
 export async function getLifelogById(apiKey: string, lifelogId: string, options: Pick<LifelogParams, 'includeMarkdown' | 'includeHeadings'> = {}): Promise<Lifelog> {
     // Cannot log here reliably for stdio
     // console.error(`[Limitless Client] Requesting lifelog by ID: ${lifelogId}`);
