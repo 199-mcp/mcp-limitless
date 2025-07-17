@@ -1,3 +1,5 @@
+[![MseeP.ai Security Assessment Badge](https://mseep.net/pr/199-mcp-mcp-limitless-badge.png)](https://mseep.ai/app/199-mcp-mcp-limitless)
+
 # Scientifically Validated Speech Vitality Index
 
 ## Overview
