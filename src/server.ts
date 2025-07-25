@@ -30,7 +30,7 @@ import {
 const MAX_API_LIMIT = 10; // Limitless API maximum per request
 const MAX_TOTAL_FETCH_LIMIT = 100; // Maximum total items to fetch across pages
 const DEFAULT_FETCH_LIMIT = 10;
-const MAX_RESPONSE_TOKENS = 20000; // Leave 5k buffer below 25k limit
+const MAX_RESPONSE_TOKENS = 20000; // Leave buffer below Claude's limit
 const TOKEN_ESTIMATION_RATIO = 0.25; // Rough estimate: 1 token per 4 characters
 
 // --- Environment Variable Checks ---
@@ -286,7 +286,7 @@ const DetailedAnalysisArgsSchema = {
 
 const server = new McpServer({
     name: "LimitlessMCP",
-    version: "0.13.0",
+    version: "0.13.1",
 }, {
     capabilities: {
         tools: {}

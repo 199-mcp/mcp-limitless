@@ -1,6 +1,6 @@
 {
   "name": "199bio-mcp-limitless-server",
-  "version": "0.13.0",
+  "version": "0.13.1",
   "description": "Enhanced MCP server for Limitless Pendant with advanced conversation analysis, meeting detection, action item extraction, and comprehensive analytics. Features smart pagination for handling large datasets.",
   "license": "MIT",
   "author": "Boris Djordjevic <boris@199longevity.com> (199 Longevity), Ryan Boyle (Original)",
