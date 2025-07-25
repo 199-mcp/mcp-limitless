@@ -4,7 +4,14 @@
 
 A model context protocol (MCP) server that provides scientifically validated analysis of conversational speech patterns from Limitless Pendant recordings. Unlike speculative biomarker approaches, this implementation focuses exclusively on empirically validated metrics derived from real-world transcription data analysis.
 
-### What's New in v0.11.0
+### What's New in v0.12.0
+
+- **Enhanced Token Limit Handling**: More aggressive truncation for oversized responses
+- **Fixed Search Tool**: `limitless_search_lifelogs` now properly handles token limits
+- **Improved Response Safety**: Pre-emptive array truncation before token estimation
+- **Better Error Prevention**: All tools now use safe response wrapper consistently
+
+### Previous Updates (v0.11.0)
 
 - **Token Limit Solution**: Smart pagination and response chunking to handle large datasets
 - **New Full Transcript Tool**: `limitless_get_full_transcript` fetches complete data with automatic pagination

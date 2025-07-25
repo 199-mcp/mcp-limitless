@@ -128,21 +128,52 @@ function validateApiConstraints(args: any): { valid: boolean; error?: string } {
  * Create a safe response with token limit handling and pagination info
  */
 function createSafeResponse(data: any, description: string = "Result", paginationInfo?: { nextCursor?: string; hasMore?: boolean; totalFetched?: number }): CallToolResult {
-    const { content, truncated, tokenCount } = truncateResponse(data);
+    // First check if we need to truncate the data array itself
+    let processedData = data;
+    let wasArrayTruncated = false;
+    
+    if (Array.isArray(data)) {
+        const fullEstimate = estimateTokens(JSON.stringify(data, null, 2));
+        if (fullEstimate > MAX_RESPONSE_TOKENS * 0.8) {
+            // Calculate how many items we can safely include
+            const sampleItem = data[0] ? JSON.stringify(data[0], null, 2) : "{}";
+            const itemTokens = estimateTokens(sampleItem);
+            const headerTokens = 2000; // Reserve for description and metadata
+            const maxItems = Math.max(1, Math.floor((MAX_RESPONSE_TOKENS - headerTokens) / itemTokens));
+            
+            if (data.length > maxItems) {
+                processedData = data.slice(0, maxItems);
+                wasArrayTruncated = true;
+                
+                // Update description to reflect truncation
+                description = `${description} (Showing first ${maxItems} of ${data.length} items due to size limits)`;
+                
+                // Force pagination info
+                if (!paginationInfo) {
+                    paginationInfo = { hasMore: true };
+                } else {
+                    paginationInfo.hasMore = true;
+                }
+            }
+        }
+    }
+    
+    const { content, truncated, tokenCount } = truncateResponse(processedData);
     
     let resultText = `${description}:\n\n${JSON.stringify(content, null, 2)}`;
     
     if (paginationInfo?.nextCursor) {
         resultText += `\n\n📄 **Pagination Available**: Use cursor="${paginationInfo.nextCursor}" to fetch next page.`;
         if (paginationInfo.totalFetched) {
-            resultText += ` (Showing ${Array.isArray(data) ? data.length : 'N/A'} items, ${paginationInfo.totalFetched} total fetched)`;
+            resultText += ` (Showing ${Array.isArray(processedData) ? processedData.length : 'N/A'} items)`;
         }
-    } else if (paginationInfo?.hasMore === false) {
-        resultText += `\n\n✅ **End of Results**: No more data available.`;
+    } else if (paginationInfo?.hasMore || wasArrayTruncated) {
+        resultText += `\n\n⚠️ **More Data Available**: Use smaller limit or cursor pagination to see additional results.`;
     }
     
-    if (truncated) {
-        resultText += `\n\n⚠️ **Response Truncated**: Reduced from ~${Math.ceil(estimateTokens(JSON.stringify(data, null, 2)) / 1000)}k to ~${Math.ceil(tokenCount / 1000)}k tokens. Use smaller limit, cursor pagination, or more specific queries.`;
+    if (truncated || wasArrayTruncated) {
+        const originalTokens = estimateTokens(JSON.stringify(data, null, 2));
+        resultText += `\n\n⚠️ **Response Truncated**: Reduced from ~${Math.ceil(originalTokens / 1000)}k to ~${Math.ceil(tokenCount / 1000)}k tokens. Use smaller limit, cursor pagination, or more specific queries.`;
     }
     
     return { content: [{ type: "text", text: resultText }] };
@@ -265,7 +296,7 @@ const SpeechBiomarkerArgsSchema = {
 
 const server = new McpServer({
     name: "LimitlessMCP",
-    version: "0.11.0",
+    version: "0.12.0",
 }, {
     capabilities: {
         tools: {}
@@ -596,22 +627,44 @@ server.tool( "limitless_search_lifelogs",
         const fetchLimit = args.fetch_limit ?? 20;
         console.error(`[Server Tool] Search initiated for term: "${args.search_term}", fetch_limit: ${fetchLimit}`);
         try {
-            const logsToSearch = await getLifelogs(limitlessApiKey, { limit: fetchLimit, direction: 'desc', timezone: args.timezone, includeMarkdown: true, includeHeadings: args.includeHeadings, isStarred: args.isStarred });
-            if (logsToSearch.length === 0) return { content: [{ type: "text", text: "No recent lifelogs found to search within." }] };
+            const logsToSearch = await getLifelogs(limitlessApiKey, { 
+                limit: fetchLimit, 
+                direction: 'desc', 
+                timezone: args.timezone, 
+                includeMarkdown: args.includeMarkdown ?? true, 
+                includeHeadings: args.includeHeadings ?? true, 
+                isStarred: args.isStarred 
+            });
+            
+            if (logsToSearch.length === 0) {
+                return { content: [{ type: "text", text: "No recent lifelogs found to search within." }] };
+            }
+            
             const searchTermLower = args.search_term.toLowerCase();
-            const matchingLogs = logsToSearch.filter(log => log.title?.toLowerCase().includes(searchTermLower) || (log.markdown && log.markdown.toLowerCase().includes(searchTermLower)));
+            const matchingLogs = logsToSearch.filter(log => 
+                log.title?.toLowerCase().includes(searchTermLower) || 
+                (log.markdown && log.markdown.toLowerCase().includes(searchTermLower))
+            );
+            
             const finalLimit = args.limit; // This limit applies to the *results*
             const limitedResults = finalLimit ? matchingLogs.slice(0, finalLimit) : matchingLogs;
-            if (limitedResults.length === 0) return { content: [{ type: "text", text: `No matches found for "${args.search_term}" within the ${logsToSearch.length} most recent lifelogs searched.` }] };
-            // Report count based on limitedResults length and the requested result limit
-            let resultPrefix = `Found ${limitedResults.length} match(es) for "${args.search_term}" within the ${logsToSearch.length} most recent lifelogs searched`;
-            if (finalLimit !== undefined) {
-                resultPrefix += ` (displaying up to ${finalLimit})`;
+            
+            if (limitedResults.length === 0) {
+                return { content: [{ type: "text", text: `No matches found for "${args.search_term}" within the ${logsToSearch.length} most recent lifelogs searched.` }] };
             }
-            resultPrefix += ':\n\n';
-            const resultText = `${resultPrefix}${JSON.stringify(limitedResults, null, 2)}`;
-            return { content: [{ type: "text", text: resultText }] };
-        } catch (error) { return handleToolApiCall(() => Promise.reject(error)); }
+            
+            // Use createSafeResponse to handle token limits
+            return createSafeResponse(
+                limitedResults,
+                `Found ${limitedResults.length} match(es) for "${args.search_term}" within the ${logsToSearch.length} most recent lifelogs searched${finalLimit !== undefined ? ` (displaying up to ${finalLimit})` : ''}`,
+                {
+                    hasMore: matchingLogs.length > limitedResults.length,
+                    totalFetched: logsToSearch.length
+                }
+            );
+        } catch (error) { 
+            return handleToolApiCall(() => Promise.reject(error)); 
+        }
     }
 );
 
