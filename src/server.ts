@@ -25,11 +25,6 @@ import {
     TranscriptOptions,
     DetailedTranscript
 } from "./transcript-extraction.js";
-// Scientifically validated Speech Vitality Index
-import {
-    ValidatedSpeechVitalityAnalyzer,
-    ValidatedSpeechVitality
-} from "./speech-vitality-index.js";
 
 // --- Constants ---
 const MAX_API_LIMIT = 10; // Limitless API maximum per request
@@ -285,18 +280,13 @@ const DetailedAnalysisArgsSchema = {
     preserve_precision: z.boolean().optional().default(true).describe("Maintain exact numbers, measurements, and technical specifications without rounding or generalization."),
 };
 
-const SpeechBiomarkerArgsSchema = {
-    time_expression: z.string().optional().describe("Natural time expression like 'today', 'this week', 'past 3 days', 'last month' (defaults to 'past 7 days')."),
-    timezone: z.string().optional().describe("IANA timezone for date/time parameters."),
-    detailed: z.boolean().optional().default(false).describe("Show detailed component breakdown with engagement, fluency, and interaction metrics.")
-};
 
 
 // --- MCP Server Setup ---
 
 const server = new McpServer({
     name: "LimitlessMCP",
-    version: "0.12.0",
+    version: "0.13.0",
 }, {
     capabilities: {
         tools: {}
@@ -396,20 +386,6 @@ Available Tools:
     - **USE FOR:** "What were the exact technical specifications mentioned?", "Give me all the specific numbers and figures discussed"
     - Args: time_expression (opt, default 'today'), timezone (opt), focus_area (opt, default 'all'), preserve_precision (opt, default true)
 
-14. **speechclock** / **speechage**: Scientifically Validated Speech Vitality Index (0-100).
-    - **EMPIRICALLY VALIDATED:** Based on analysis of 2,500+ conversation segments
-    - **MULTI-DIMENSIONAL:** Engagement (responsiveness), fluency (WPM), interaction (turn-taking)
-    - **CONTEXT AWARE:** Detects conversation types (discussion, presentation, casual, automated)
-    - **QUALITY ASSESSMENT:** Transparent reliability scoring and confidence intervals
-    - **USE FOR:** "What's my speechclock for the past 3 days?", "Show detailed speechage analysis"
-    - Args: time_expression (opt, default 'past 7 days'), timezone (opt), detailed (opt, show engagement/fluency/interaction breakdown)
-
-15. **speechclock_info** / **speechage_info**: Get version and methodology information.
-    - **VERSION INFO:** Shows current version (2.0.0-validated), available parameters, and usage
-    - **NO LEGACY:** Explicitly states that percentiles/trends were removed in v2.0
-    - **METHODOLOGY:** Explains the empirically validated approach and metrics
-    - **USE FOR:** "What version is speechage?", "How does speechclock work?"
-    - Args: none
 `
 });
 
@@ -735,29 +711,43 @@ server.tool("limitless_detect_meetings",
             const parser = new NaturalTimeParser({ timezone: args.timezone });
             const timeRange = parser.parseTimeExpression(timeExpression);
             
-            const apiOptions: LifelogParams = {
-                start: timeRange.start,
-                end: timeRange.end,
-                timezone: timeRange.timezone,
-                includeMarkdown: true,
-                includeHeadings: true,
-                limit: 1000,
-                direction: 'asc'
-            };
+            // Fetch all logs with pagination
+            const allLogs: Lifelog[] = [];
+            let cursor: string | undefined = undefined;
             
-            const logs = await getLifelogs(limitlessApiKey, apiOptions);
-            const meetings = MeetingDetector.detectMeetings(logs);
+            while (true) {
+                const result = await getLifelogsWithPagination(limitlessApiKey, {
+                    start: timeRange.start,
+                    end: timeRange.end,
+                    timezone: timeRange.timezone,
+                    includeMarkdown: true,
+                    includeHeadings: true,
+                    limit: MAX_API_LIMIT,
+                    direction: 'asc',
+                    cursor: cursor
+                });
+                
+                allLogs.push(...result.lifelogs);
+                
+                if (!result.pagination.nextCursor || result.lifelogs.length < MAX_API_LIMIT) {
+                    break;
+                }
+                cursor = result.pagination.nextCursor;
+            }
+            
+            const meetings = MeetingDetector.detectMeetings(allLogs);
             
             // Filter by minimum duration if specified
             const filteredMeetings = meetings.filter(meeting => 
                 meeting.duration >= (args.min_duration_minutes || 5) * 60 * 1000
             );
             
-            const resultText = filteredMeetings.length === 0
-                ? `No meetings detected for "${timeExpression}".`
-                : `Found ${filteredMeetings.length} meeting(s) for "${timeExpression}":\n\n${JSON.stringify(filteredMeetings, null, 2)}`;
-                
-            return { content: [{ type: "text", text: resultText }] };
+            return createSafeResponse(
+                filteredMeetings,
+                filteredMeetings.length === 0
+                    ? `No meetings detected for "${timeExpression}"`
+                    : `Found ${filteredMeetings.length} meeting(s) for "${timeExpression}"`
+            );
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             return { content: [{ type: "text", text: `Error detecting meetings: ${errorMessage}` }], isError: true };
@@ -867,20 +857,33 @@ server.tool("limitless_extract_action_items",
             const parser = new NaturalTimeParser({ timezone: args.timezone });
             const timeRange = parser.parseTimeExpression(timeExpression);
             
-            const apiOptions: LifelogParams = {
-                start: timeRange.start,
-                end: timeRange.end,
-                timezone: timeRange.timezone,
-                includeMarkdown: true,
-                includeHeadings: true,
-                limit: 1000,
-                direction: 'asc'
-            };
+            // Fetch all logs with pagination
+            const allLogs: Lifelog[] = [];
+            let cursor: string | undefined = undefined;
             
-            const logs = await getLifelogs(limitlessApiKey, apiOptions);
+            while (true) {
+                const result = await getLifelogsWithPagination(limitlessApiKey, {
+                    start: timeRange.start,
+                    end: timeRange.end,
+                    timezone: timeRange.timezone,
+                    includeMarkdown: true,
+                    includeHeadings: true,
+                    limit: MAX_API_LIMIT,
+                    direction: 'asc',
+                    cursor: cursor
+                });
+                
+                allLogs.push(...result.lifelogs);
+                
+                if (!result.pagination.nextCursor || result.lifelogs.length < MAX_API_LIMIT) {
+                    break;
+                }
+                cursor = result.pagination.nextCursor;
+            }
+            
             let allActionItems: ActionItem[] = [];
             
-            for (const lifelog of logs) {
+            for (const lifelog of allLogs) {
                 if (lifelog.contents) {
                     const items = ActionItemExtractor.extractFromNodes(lifelog.contents, lifelog.id);
                     allActionItems.push(...items);
@@ -895,11 +898,12 @@ server.tool("limitless_extract_action_items",
                 allActionItems = allActionItems.filter(item => item.priority === args.priority);
             }
             
-            const resultText = allActionItems.length === 0
-                ? `No action items found for "${timeExpression}".`
-                : `Found ${allActionItems.length} action item(s) for "${timeExpression}":\n\n${JSON.stringify(allActionItems, null, 2)}`;
-                
-            return { content: [{ type: "text", text: resultText }] };
+            return createSafeResponse(
+                allActionItems,
+                allActionItems.length === 0
+                    ? `No action items found for "${timeExpression}"`
+                    : `Found ${allActionItems.length} action item(s) for "${timeExpression}"`
+            );
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
             return { content: [{ type: "text", text: `Error extracting action items: ${errorMessage}` }], isError: true };
@@ -928,17 +932,28 @@ server.tool("limitless_get_raw_transcript",
                 const parser = new NaturalTimeParser({ timezone: args.timezone });
                 const timeRange = parser.parseTimeExpression(timeExpression);
                 
-                const apiOptions: LifelogParams = {
-                    start: timeRange.start,
-                    end: timeRange.end,
-                    timezone: timeRange.timezone,
-                    includeMarkdown: true,
-                    includeHeadings: true,
-                    limit: 1000,
-                    direction: 'asc'
-                };
+                // Fetch all logs with pagination
+                let cursor: string | undefined = undefined;
                 
-                lifelogs = await getLifelogs(limitlessApiKey, apiOptions);
+                while (true) {
+                    const result = await getLifelogsWithPagination(limitlessApiKey, {
+                        start: timeRange.start,
+                        end: timeRange.end,
+                        timezone: timeRange.timezone,
+                        includeMarkdown: true,
+                        includeHeadings: true,
+                        limit: MAX_API_LIMIT,
+                        direction: 'asc',
+                        cursor: cursor
+                    });
+                    
+                    lifelogs.push(...result.lifelogs);
+                    
+                    if (!result.pagination.nextCursor || result.lifelogs.length < MAX_API_LIMIT) {
+                        break;
+                    }
+                    cursor = result.pagination.nextCursor;
+                }
             }
             
             if (lifelogs.length === 0) {
@@ -956,13 +971,11 @@ server.tool("limitless_get_raw_transcript",
             if (lifelogs.length === 1) {
                 // Single lifelog transcript
                 const transcript = TranscriptExtractor.extractRawTranscript(lifelogs[0], transcriptOptions);
-                const resultText = `Detailed transcript for ${transcript.title}:\n\n${JSON.stringify(transcript, null, 2)}`;
-                return { content: [{ type: "text", text: resultText }] };
+                return createSafeResponse(transcript, `Detailed transcript for ${transcript.title}`);
             } else {
                 // Multiple lifelogs combined transcript
                 const result = TranscriptExtractor.extractMultipleTranscripts(lifelogs, transcriptOptions);
-                const resultText = `Combined transcript analysis (${lifelogs.length} lifelogs):\n\n${JSON.stringify(result, null, 2)}`;
-                return { content: [{ type: "text", text: resultText }] };
+                return createSafeResponse(result, `Combined transcript analysis (${lifelogs.length} lifelogs)`);
             }
             
         } catch (error) {
@@ -982,17 +995,31 @@ server.tool("limitless_get_detailed_analysis",
             const parser = new NaturalTimeParser({ timezone: args.timezone });
             const timeRange = parser.parseTimeExpression(timeExpression);
             
-            const apiOptions: LifelogParams = {
-                start: timeRange.start,
-                end: timeRange.end,
-                timezone: timeRange.timezone,
-                includeMarkdown: true,
-                includeHeadings: true,
-                limit: 1000,
-                direction: 'asc'
-            };
+            // Fetch all logs with pagination
+            const allLogs: Lifelog[] = [];
+            let cursor: string | undefined = undefined;
             
-            const logs = await getLifelogs(limitlessApiKey, apiOptions);
+            while (true) {
+                const result = await getLifelogsWithPagination(limitlessApiKey, {
+                    start: timeRange.start,
+                    end: timeRange.end,
+                    timezone: timeRange.timezone,
+                    includeMarkdown: true,
+                    includeHeadings: true,
+                    limit: MAX_API_LIMIT,
+                    direction: 'asc',
+                    cursor: cursor
+                });
+                
+                allLogs.push(...result.lifelogs);
+                
+                if (!result.pagination.nextCursor || result.lifelogs.length < MAX_API_LIMIT) {
+                    break;
+                }
+                cursor = result.pagination.nextCursor;
+            }
+            
+            const logs = allLogs;
             
             if (logs.length === 0) {
                 return { content: [{ type: "text", text: `No detailed information found for "${timeExpression}".` }] };
@@ -1097,8 +1124,10 @@ server.tool("limitless_get_detailed_analysis",
                 });
             }
             
-            const resultText = `Detailed analysis for "${timeExpression}" (Focus: ${args.focus_area}):\n\n${JSON.stringify(detailedAnalysis, null, 2)}`;
-            return { content: [{ type: "text", text: resultText }] };
+            return createSafeResponse(
+                detailedAnalysis,
+                `Detailed analysis for "${timeExpression}" (Focus: ${args.focus_area})`
+            );
             
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
@@ -1107,170 +1136,6 @@ server.tool("limitless_get_detailed_analysis",
     }
 );
 
-// Validated Speech Vitality Handler
-const speechVitalityHandler = async (args: any, _extra: RequestHandlerExtra): Promise<CallToolResult> => {
-    try {
-        const timeExpression = args.time_expression || 'past 7 days';
-        const parser = new NaturalTimeParser({ timezone: args.timezone });
-        const timeRange = parser.parseTimeExpression(timeExpression);
-        
-        const apiOptions: LifelogParams = {
-            start: timeRange.start,
-            end: timeRange.end,
-            timezone: timeRange.timezone,
-            includeMarkdown: true,
-            includeHeadings: true,
-            limit: 1000,
-            direction: 'asc'
-        };
-        
-        const logs = await getLifelogs(limitlessApiKey, apiOptions);
-        
-        if (logs.length === 0) {
-            return { content: [{ type: "text", text: `No conversations found for "${timeExpression}".` }] };
-        }
-        
-        // Analyze using validated SVI
-        const analysis = ValidatedSpeechVitalityAnalyzer.analyze(logs);
-        
-        // Build comprehensive, scientifically validated response
-        let resultText = "";
-        
-        // Main scores display
-        resultText += `**Speech Vitality Index: ${analysis.overallScore}/100**\n`;
-        resultText += `*Scientifically validated analysis (${analysis.analysisVersion})*\n\n`;
-        
-        // Context detection
-        resultText += `**Conversation Type:** ${analysis.context.type} (${(analysis.context.confidence * 100).toFixed(0)}% confidence)\n`;
-        if (analysis.context.indicators.length > 0) {
-            resultText += `*Indicators: ${analysis.context.indicators.join(', ')}*\n\n`;
-        }
-        
-        // Component scores (always show for scientific transparency)
-        if (args.detailed) {
-            resultText += `**Detailed Analysis:**\n`;
-            resultText += `• Engagement: ${analysis.engagementScore}/100\n`;
-            resultText += `  - Micro-responses: ${(analysis.engagement.microResponseRate * 100).toFixed(1)}% (${analysis.engagement.microResponseCount} of ${analysis.dataQuality.totalSegments})\n`;
-            resultText += `  - Quick responses: ${(analysis.engagement.quickResponseRatio * 100).toFixed(1)}% (${analysis.engagement.quickResponseCount}/${analysis.engagement.totalTransitions})\n`;
-            resultText += `  - Response time: ${analysis.engagement.medianResponseTime.toFixed(0)}ms median\n\n`;
-            
-            resultText += `• Fluency: ${analysis.fluencyScore}/100\n`;
-            resultText += `  - Speaking rate: ${analysis.fluency.medianWPM.toFixed(0)} WPM (median)\n`;
-            resultText += `  - Consistency: ${(analysis.fluency.wpmConsistency * 100).toFixed(1)}%\n`;
-            resultText += `  - Valid segments: ${analysis.fluency.validSegmentCount}/${analysis.dataQuality.totalSegments} (${(analysis.fluency.validSegmentRatio * 100).toFixed(1)}%)\n\n`;
-            
-            resultText += `• Interaction: ${analysis.interactionScore}/100\n`;
-            resultText += `  - Speaking balance: ${(analysis.interaction.conversationBalance * 100).toFixed(1)}%\n`;
-            resultText += `  - Speaker transitions: ${analysis.interaction.speakerTransitions}\n`;
-            resultText += `  - Total speakers: ${analysis.interaction.totalSpeakers}\n\n`;
-        } else {
-            resultText += `**Key Metrics:**\n`;
-            resultText += `• Engagement: ${analysis.engagementScore}/100 (${(analysis.engagement.microResponseRate * 100).toFixed(1)}% responsiveness)\n`;
-            resultText += `• Fluency: ${analysis.fluencyScore}/100 (${analysis.fluency.medianWPM.toFixed(0)} WPM median)\n`;
-            resultText += `• Interaction: ${analysis.interactionScore}/100 (${analysis.interaction.speakerTransitions} transitions)\n\n`;
-        }
-        
-        // Data quality assessment
-        resultText += `**Data Quality:** ${analysis.dataQuality.dataReliability} (${analysis.dataQuality.confidenceScore}% confidence)\n`;
-        
-        if (analysis.dataQuality.dataReliability === 'low') {
-            resultText += `*Note: Limited data quality may affect accuracy. Consider longer conversations for better analysis.*\n`;
-        }
-        
-        // Conversation duration
-        const durationMinutes = analysis.conversationDuration / (1000 * 60);
-        resultText += `**Duration:** ${durationMinutes.toFixed(1)} minutes\n`;
-        resultText += `**Analysis timestamp:** ${analysis.analysisTimestamp.toLocaleString()}`;
-        
-        return { content: [{ type: "text", text: resultText }] };
-        
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        return { content: [{ type: "text", text: `Error analyzing speech vitality: ${errorMessage}` }], isError: true };
-    }
-};
-
-// Validated Speech Vitality Tools
-server.tool("speechclock",
-    "Scientifically validated Speech Vitality Index (0-100) with empirically validated engagement, fluency, and interaction analysis. Includes conversation type detection and data quality assessment.",
-    SpeechBiomarkerArgsSchema,
-    speechVitalityHandler
-);
-
-server.tool("speechage",
-    "Scientifically validated Speech Vitality Index (0-100) with empirically validated engagement, fluency, and interaction analysis. Includes conversation type detection and data quality assessment.",
-    SpeechBiomarkerArgsSchema,
-    speechVitalityHandler
-);
-
-// Speech Vitality Information Tool
-const speechVitalityInfoHandler = async (_args: any, _extra: RequestHandlerExtra): Promise<CallToolResult> => {
-    const infoText = `**Speech Vitality Index (SVI) Information**
-
-**Version**: 2.0.0-validated (Server v0.8.2)
-**Implementation**: Scientifically Validated Speech Vitality Index
-
-**Overview**:
-The Speech Vitality Index is an empirically validated speech analysis system based on rigorous analysis of 2,500+ real conversation segments from Limitless Pendant recordings.
-
-**Key Features**:
-• Single reliable score (0-100) derived from validated metrics
-• Multi-dimensional analysis: engagement, fluency, and interaction patterns
-• Context-aware conversation type detection
-• Transparent data quality assessment with confidence intervals
-
-**Validated Metrics**:
-1. **Engagement Analysis** (40% weight)
-   - Micro-responsiveness rate (7-14% baseline)
-   - Turn-taking velocity (<500ms = high engagement)
-   - Responsive word patterns
-
-2. **Fluency Analysis** (35% weight)
-   - Filtered speaking rate (100-250 WPM range)
-   - Speech consistency measurement
-   - Quality-filtered segments only
-
-3. **Interaction Analysis** (25% weight)
-   - Conversational balance (30-70% optimal)
-   - Speaker transition patterns
-   - Turn-taking dynamics
-
-**Available Parameters**:
-• time_expression: Natural language time (e.g., "today", "past 3 days", "last week")
-• timezone: IANA timezone for calculations
-• detailed: Show component breakdown (true/false)
-
-**Usage Examples**:
-- "What's my speechclock?"
-- "Show my speechage for the past 3 days with details"
-- "Give me a detailed speech vitality analysis for last week"
-
-**Important Notes**:
-- Requires minimum 5-minute conversations for reliable analysis
-- Only analyzes quality conversations with clear audio
-- Shows "insufficient data" when appropriate
-- NO percentiles or trends - those were removed in v2.0
-
-**Scientific Foundation**:
-Based on peer-reviewed methodology documented at:
-https://github.com/199-biotechnologies/mcp-limitless-enhanced/docs/SPEECH_VITALITY_INDEX.md
-
-For more information: boris@199longevity.com`;
-    
-    return { content: [{ type: "text", text: infoText }] };
-};
-
-server.tool("speechclock_info",
-    "Get detailed information about the Speech Vitality Index including version, methodology, parameters, and usage examples.",
-    {},
-    speechVitalityInfoHandler
-);
-
-server.tool("speechage_info",
-    "Get detailed information about the Speech Vitality Index including version, methodology, parameters, and usage examples.",
-    {},
-    speechVitalityInfoHandler
-);
 
 // Tool for fetching complete data with automatic pagination
 server.tool("limitless_get_full_transcript",
