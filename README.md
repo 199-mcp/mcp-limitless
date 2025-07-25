@@ -4,7 +4,15 @@
 
 A model context protocol (MCP) server that provides scientifically validated analysis of conversational speech patterns from Limitless Pendant recordings. Unlike speculative biomarker approaches, this implementation focuses exclusively on empirically validated metrics derived from real-world transcription data analysis.
 
-### What's New in v0.9.0
+### What's New in v0.11.0
+
+- **Token Limit Solution**: Smart pagination and response chunking to handle large datasets
+- **New Full Transcript Tool**: `limitless_get_full_transcript` fetches complete data with automatic pagination
+- **Enhanced Pagination**: All list tools now support cursor-based pagination to avoid token limits
+- **Intelligent Response Handling**: Automatic detection and handling of oversized responses
+- **Multiple Output Formats**: Summary, full data, or transcript-only modes for flexibility
+
+### Previous Updates (v0.9.0)
 
 - **Starred Lifelog Support**: Filter and identify important conversations marked with stars
 - **Enhanced Error Messages**: More specific error handling with detailed context
@@ -139,6 +147,33 @@ Duration: 23.4 minutes
 - **Action Item Extraction**: `limitless_extract_action_items`
 - **Detailed Transcripts**: `limitless_get_raw_transcript`
 - **Daily Summaries**: `limitless_get_daily_summary`
+- **Full Transcript Fetcher**: `limitless_get_full_transcript` (NEW in v0.11.0)
+
+### Handling Large Datasets (v0.11.0)
+
+The MCP server now intelligently handles large datasets that would exceed Claude's token limits:
+
+#### Pagination Support
+All list tools now support cursor-based pagination:
+```
+# First request
+limitless_list_lifelogs_by_date(date="2025-07-24", limit=10)
+# Returns: 10 items + cursor
+
+# Next page
+limitless_list_lifelogs_by_date(date="2025-07-24", limit=10, cursor="next_page_cursor")
+```
+
+#### Full Transcript Tool
+For complete data without manual pagination:
+```
+limitless_get_full_transcript(date="2025-07-24", format="transcript_only")
+```
+
+Formats available:
+- `summary`: Key information only (default)
+- `full`: Complete data including all fields
+- `transcript_only`: Just the transcript text
 
 ## API Reference
 

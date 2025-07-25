@@ -265,7 +265,7 @@ const SpeechBiomarkerArgsSchema = {
 
 const server = new McpServer({
     name: "LimitlessMCP",
-    version: "0.10.0",
+    version: "0.11.0",
 }, {
     capabilities: {
         tools: {}
@@ -434,27 +434,159 @@ server.tool( "limitless_get_lifelog_by_id",
     async (args, _extra) => handleToolApiCall(() => getLifelogById(limitlessApiKey, args.lifelog_id, { includeMarkdown: args.includeMarkdown, includeHeadings: args.includeHeadings }))
 );
 server.tool( "limitless_list_lifelogs_by_date",
-    "Lists logs/recordings for a specific date. Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.",
+    "Lists logs/recordings for a specific date. Returns paginated results to avoid token limits. Use cursor to fetch next page. Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.",
     ListByDateArgsSchema,
     async (args, _extra) => {
-        const apiOptions: LifelogParams = { date: args.date, limit: args.limit, timezone: args.timezone, includeMarkdown: args.includeMarkdown, includeHeadings: args.includeHeadings, direction: args.direction ?? 'asc', isStarred: args.isStarred };
-        return handleToolApiCall(() => getLifelogs(limitlessApiKey, apiOptions), args.limit); // Pass requestedLimit to helper
+        try {
+            const validation = validateApiConstraints(args);
+            if (!validation.valid) {
+                return { content: [{ type: "text", text: validation.error! }], isError: true };
+            }
+            
+            // Use pagination-aware function
+            const result = await getLifelogsWithPagination(limitlessApiKey, {
+                date: args.date,
+                limit: args.limit || MAX_API_LIMIT,
+                timezone: args.timezone,
+                includeMarkdown: args.includeMarkdown,
+                includeHeadings: args.includeHeadings,
+                direction: args.direction ?? 'asc',
+                isStarred: args.isStarred,
+                cursor: args.cursor
+            });
+            
+            // Check if response might be too large
+            const estimatedSize = estimateTokens(JSON.stringify(result.lifelogs));
+            if (estimatedSize > MAX_RESPONSE_TOKENS * 0.8 && result.lifelogs.length > 1) {
+                // Return partial data with strong cursor guidance
+                const partialCount = Math.max(1, Math.floor(result.lifelogs.length * 0.5));
+                const partialLifelogs = result.lifelogs.slice(0, partialCount);
+                
+                return createSafeResponse(
+                    partialLifelogs,
+                    `Found ${result.lifelogs.length} lifelogs for ${args.date}, showing first ${partialCount} to avoid token limits`,
+                    {
+                        nextCursor: result.pagination.nextCursor,
+                        hasMore: true,
+                        totalFetched: partialCount
+                    }
+                );
+            }
+            
+            return createSafeResponse(
+                result.lifelogs,
+                `Found ${result.lifelogs.length} lifelogs for ${args.date}`,
+                {
+                    nextCursor: result.pagination.nextCursor,
+                    hasMore: result.pagination.hasMore,
+                    totalFetched: result.lifelogs.length
+                }
+            );
+        } catch (error) {
+            return handleToolApiCall(() => Promise.reject(error));
+        }
     }
 );
 server.tool( "limitless_list_lifelogs_by_range",
-    "Lists logs/recordings within a date/time range. Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.",
+    "Lists logs/recordings within a date/time range. Returns paginated results to avoid token limits. Use cursor to fetch next page. Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.",
     ListByRangeArgsSchema,
     async (args, _extra) => {
-         const apiOptions: LifelogParams = { start: args.start, end: args.end, limit: args.limit, timezone: args.timezone, includeMarkdown: args.includeMarkdown, includeHeadings: args.includeHeadings, direction: args.direction ?? 'asc', isStarred: args.isStarred };
-        return handleToolApiCall(() => getLifelogs(limitlessApiKey, apiOptions), args.limit); // Pass requestedLimit to helper
+        try {
+            const validation = validateApiConstraints(args);
+            if (!validation.valid) {
+                return { content: [{ type: "text", text: validation.error! }], isError: true };
+            }
+            
+            const result = await getLifelogsWithPagination(limitlessApiKey, {
+                start: args.start,
+                end: args.end,
+                limit: args.limit || MAX_API_LIMIT,
+                timezone: args.timezone,
+                includeMarkdown: args.includeMarkdown,
+                includeHeadings: args.includeHeadings,
+                direction: args.direction ?? 'asc',
+                isStarred: args.isStarred,
+                cursor: args.cursor
+            });
+            
+            const estimatedSize = estimateTokens(JSON.stringify(result.lifelogs));
+            if (estimatedSize > MAX_RESPONSE_TOKENS * 0.8 && result.lifelogs.length > 1) {
+                const partialCount = Math.max(1, Math.floor(result.lifelogs.length * 0.5));
+                const partialLifelogs = result.lifelogs.slice(0, partialCount);
+                
+                return createSafeResponse(
+                    partialLifelogs,
+                    `Found ${result.lifelogs.length} lifelogs in range, showing first ${partialCount} to avoid token limits`,
+                    {
+                        nextCursor: result.pagination.nextCursor,
+                        hasMore: true,
+                        totalFetched: partialCount
+                    }
+                );
+            }
+            
+            return createSafeResponse(
+                result.lifelogs,
+                `Found ${result.lifelogs.length} lifelogs in the specified range`,
+                {
+                    nextCursor: result.pagination.nextCursor,
+                    hasMore: result.pagination.hasMore,
+                    totalFetched: result.lifelogs.length
+                }
+            );
+        } catch (error) {
+            return handleToolApiCall(() => Promise.reject(error));
+        }
     }
 );
 server.tool( "limitless_list_recent_lifelogs",
-    "Lists the most recent logs/recordings (sorted newest first). Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.",
+    "Lists the most recent logs/recordings (sorted newest first). Returns paginated results to avoid token limits. Use cursor to fetch next page. Best for getting raw log data which you can then analyze for summaries, action items, topics, etc.",
     ListRecentArgsSchema,
     async (args, _extra) => {
-         const apiOptions: LifelogParams = { limit: args.limit, timezone: args.timezone, includeMarkdown: args.includeMarkdown, includeHeadings: args.includeHeadings, direction: 'desc', isStarred: args.isStarred };
-        return handleToolApiCall(() => getLifelogs(limitlessApiKey, apiOptions), args.limit); // Pass requestedLimit to helper
+        try {
+            const validation = validateApiConstraints(args);
+            if (!validation.valid) {
+                return { content: [{ type: "text", text: validation.error! }], isError: true };
+            }
+            
+            const result = await getLifelogsWithPagination(limitlessApiKey, {
+                limit: args.limit || MAX_API_LIMIT,
+                timezone: args.timezone,
+                includeMarkdown: args.includeMarkdown,
+                includeHeadings: args.includeHeadings,
+                direction: 'desc',
+                isStarred: args.isStarred,
+                cursor: args.cursor
+            });
+            
+            const estimatedSize = estimateTokens(JSON.stringify(result.lifelogs));
+            if (estimatedSize > MAX_RESPONSE_TOKENS * 0.8 && result.lifelogs.length > 1) {
+                const partialCount = Math.max(1, Math.floor(result.lifelogs.length * 0.5));
+                const partialLifelogs = result.lifelogs.slice(0, partialCount);
+                
+                return createSafeResponse(
+                    partialLifelogs,
+                    `Found ${result.lifelogs.length} recent lifelogs, showing first ${partialCount} to avoid token limits`,
+                    {
+                        nextCursor: result.pagination.nextCursor,
+                        hasMore: true,
+                        totalFetched: partialCount
+                    }
+                );
+            }
+            
+            return createSafeResponse(
+                result.lifelogs,
+                `Found ${result.lifelogs.length} recent lifelogs`,
+                {
+                    nextCursor: result.pagination.nextCursor,
+                    hasMore: result.pagination.hasMore,
+                    totalFetched: result.lifelogs.length
+                }
+            );
+        } catch (error) {
+            return handleToolApiCall(() => Promise.reject(error));
+        }
     }
 );
 server.tool( "limitless_search_lifelogs",
@@ -1086,6 +1218,150 @@ server.tool("speechage_info",
     {},
     speechVitalityInfoHandler
 );
+
+// Tool for fetching complete data with automatic pagination
+server.tool("limitless_get_full_transcript",
+    "Fetches complete transcript data for a date/range with automatic pagination. Handles large datasets by fetching all pages internally. Use this when you need complete transcript data without worrying about token limits.",
+    {
+        date: z.string().optional().describe("Specific date (YYYY-MM-DD format)"),
+        start: z.string().optional().describe("Start datetime (YYYY-MM-DD or YYYY-MM-DD HH:mm:SS)"),
+        end: z.string().optional().describe("End datetime (YYYY-MM-DD or YYYY-MM-DD HH:mm:SS)"),
+        timezone: z.string().optional().describe("IANA timezone"),
+        isStarred: z.boolean().optional().describe("Filter for starred lifelogs only"),
+        format: z.enum(["summary", "full", "transcript_only"]).optional().default("summary").describe("Output format: summary (key info only), full (all data), transcript_only (just text)")
+    },
+    async (args, _extra) => {
+        try {
+            // Validate date format
+            if (args.date && !/^\d{4}-\d{2}-\d{2}$/.test(args.date)) {
+                return { content: [{ type: "text", text: `❌ Date format error: '${args.date}' must be YYYY-MM-DD` }], isError: true };
+            }
+            
+            const allLifelogs: Lifelog[] = [];
+            let cursor: string | undefined = undefined;
+            let pageCount = 0;
+            
+            // Fetch all pages
+            while (true) {
+                pageCount++;
+                const result = await getLifelogsWithPagination(limitlessApiKey, {
+                    date: args.date,
+                    start: args.start,
+                    end: args.end,
+                    timezone: args.timezone,
+                    isStarred: args.isStarred,
+                    includeMarkdown: true,
+                    includeHeadings: true,
+                    limit: MAX_API_LIMIT,
+                    cursor: cursor,
+                    direction: 'asc'
+                });
+                
+                allLifelogs.push(...result.lifelogs);
+                
+                if (!result.pagination.nextCursor || result.lifelogs.length < MAX_API_LIMIT) {
+                    break;
+                }
+                cursor = result.pagination.nextCursor;
+            }
+            
+            if (allLifelogs.length === 0) {
+                return { content: [{ type: "text", text: "No lifelogs found for the specified criteria." }] };
+            }
+            
+            // Format based on requested output
+            let output: any;
+            let description: string;
+            
+            switch (args.format) {
+                case "transcript_only":
+                    // Extract just the transcript text
+                    const transcripts = allLifelogs.map(log => ({
+                        id: log.id,
+                        date: log.startTime.split('T')[0],
+                        transcript: log.markdown || "[No transcript available]"
+                    }));
+                    output = transcripts;
+                    description = `Complete transcripts for ${allLifelogs.length} lifelogs (${pageCount} pages fetched)`;
+                    break;
+                    
+                case "full":
+                    // Return all data
+                    output = allLifelogs;
+                    description = `Complete data for ${allLifelogs.length} lifelogs (${pageCount} pages fetched)`;
+                    break;
+                    
+                case "summary":
+                default:
+                    // Return summary with key information
+                    const summaries = allLifelogs.map(log => ({
+                        id: log.id,
+                        title: log.title || "[Untitled]",
+                        date: log.startTime.split('T')[0],
+                        time: `${log.startTime.split('T')[1]?.split('.')[0]} - ${log.endTime.split('T')[1]?.split('.')[0]}`,
+                        duration: calculateDuration(log.startTime, log.endTime),
+                        starred: log.isStarred || false,
+                        wordCount: log.markdown ? log.markdown.split(/\s+/).length : 0
+                    }));
+                    output = {
+                        total: allLifelogs.length,
+                        pages_fetched: pageCount,
+                        date_range: {
+                            start: allLifelogs[0].startTime,
+                            end: allLifelogs[allLifelogs.length - 1].endTime
+                        },
+                        lifelogs: summaries
+                    };
+                    description = `Summary of ${allLifelogs.length} lifelogs`;
+                    break;
+            }
+            
+            // Check size and handle appropriately
+            const estimatedSize = estimateTokens(JSON.stringify(output));
+            if (estimatedSize > MAX_RESPONSE_TOKENS) {
+                // Save to a structured format that can be processed in chunks
+                return {
+                    content: [{
+                        type: "text",
+                        text: `⚠️ Data too large for single response (${Math.ceil(estimatedSize / 1000)}k tokens)
+
+Successfully fetched ${allLifelogs.length} lifelogs across ${pageCount} pages.
+
+To access this data:
+1. Use the regular list tools with cursor pagination
+2. Request specific lifelogs by ID
+3. Use the search or analytics tools for specific queries
+
+Summary:
+- Total lifelogs: ${allLifelogs.length}
+- Date range: ${allLifelogs[0].startTime.split('T')[0]} to ${allLifelogs[allLifelogs.length - 1].endTime.split('T')[0]}
+- Total word count: ${allLifelogs.reduce((sum, log) => sum + (log.markdown ? log.markdown.split(/\s+/).length : 0), 0).toLocaleString()}
+- Starred items: ${allLifelogs.filter(log => log.isStarred).length}
+
+First few IDs for reference:
+${allLifelogs.slice(0, 5).map(log => `- ${log.id}: ${log.title || '[Untitled]'}`).join('\n')}`
+                    }]
+                };
+            }
+            
+            return { content: [{ type: "text", text: `${description}:\n\n${JSON.stringify(output, null, 2)}` }] };
+            
+        } catch (error) {
+            return handleToolApiCall(() => Promise.reject(error));
+        }
+    }
+);
+
+// Helper function to calculate duration
+function calculateDuration(start: string, end: string): string {
+    const startTime = new Date(start).getTime();
+    const endTime = new Date(end).getTime();
+    const durationMs = endTime - startTime;
+    const minutes = Math.floor(durationMs / 60000);
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${minutes}m`;
+}
 
 // --- Server Startup ---
 
